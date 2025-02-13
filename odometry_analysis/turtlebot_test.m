@@ -1,6 +1,6 @@
 %% dynamics
 
-sub = rossubscriber('/tb3_2/odom', 'nav_msgs/Odometry');
+sub = rossubscriber('/tb3_3/odom', 'nav_msgs/Odometry');
 [x1, y1, theta]=get_current_pose(sub);
 v = 0.1;   
 omega = 0.1;
@@ -22,9 +22,9 @@ theta = solution(:, 3);
 
 %% robot_imp_test
 pub_gazebo = rospublisher('/cmd_vel', 'geometry_msgs/Twist');
-pub_tb3 = rospublisher('/tb3_2/cmd_vel', 'geometry_msgs/Twist');
+pub_tb3 = rospublisher('/tb3_3/cmd_vel', 'geometry_msgs/Twist');
 sub_gazebo = rossubscriber('/odom', 'nav_msgs/Odometry');
-sub_tb3 = rossubscriber('/tb3_2/odom', 'nav_msgs/Odometry');
+sub_tb3 = rossubscriber('/tb3_3/odom', 'nav_msgs/Odometry');
 odomlog_tb3=[];
 odomlog_gazebo=[];
 figure;
