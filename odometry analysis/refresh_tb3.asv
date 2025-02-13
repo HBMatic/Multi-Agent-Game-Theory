@@ -1,0 +1,6 @@
+clear;
+clc;
+rosshutdown;
+rosinit;
+sub = rossubscriber('/tb3_1/odom', 'nav_msgs/Odometry');
+[x1, y1, theta]=get_current_pose(sub);

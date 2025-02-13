@@ -1,0 +1,127 @@
+clear;
+clc;
+
+% Publishers and Subscribers
+cmdVelPub = rospublisher('/cmd_vel', 'geometry_msgs/Twist'); % Velocity command publisher
+odomSub = rossubscriber('/odom', 'nav_msgs/Odometry');       % TurtleBot core odometry
+gazeboJointStateSub = rossubscriber('/joint_states', 'sensor_msgs/JointState'); % Gazebo joint states
+
+% Dynamics
+v = 0.1;   % Linear velocity (m/s)
+omega = 0.1; % Angular velocity (rad/s)
+duration = 30; % Duration in seconds
+
+% Get initial pose from TurtleBot core odometry
+disp('Waiting for initial pose...');
+odomMsg = receive(odomSub, 1); % Wait for the first odometry message
+x0 = odomMsg.Pose.Pose.Position.X;
+y0 = odomMsg.Pose.Pose.Position.Y;
+quat = [odomMsg.Pose.Pose.Orientation.W, ...
+        odomMsg.Pose.Pose.Orientation.X, ...
+        odomMsg.Pose.Pose.Orientation.Y, ...
+        odomMsg.Pose.Pose.Orientation.Z];
+euler = quat2eul(quat); % Convert quaternion to Euler angles
+theta0 = euler(3); % Extract the yaw angle (theta)
+
+% ODE system
+ode_system = @(t, state) [
+    v * cos(state(3));   % dx/dt
+    v * sin(state(3));   % dy/dt
+    omega              % dtheta/dt
+];
+initial_conditions = [x0, y0, theta0]; 
+[t, solution] = ode45(ode_system, 0:0.2:duration, initial_conditions);
+
+% Extract ODE trajectory
+odeX = solution(:, 1);
+odeY = solution(:, 2);
+
+% Robot parameters
+wheelRadius = 0.033; % meters
+wheelBase = 0.16;    % meters
+prevWheelPos = [0, 0]; % [left, right] wheel positions
+customPose = [x0, y0, theta0]; % Start custom odometry from TurtleBot core odometry
+prevTime = 0;
+
+% Data storage
+coreTrajectory = [x0, y0];    % TurtleBot core odometry trajectory
+customTrajectory = [x0, y0];  % Custom odometry trajectory
+
+% Set velocity command
+velocityCmd = rosmessage(cmdVelPub);
+
+
+disp('Running simulation...');
+tic;  % Start timer
+while toc < duration
+    % Get TurtleBot core odometry
+    velocityCmd.Linear.X = v;
+    velocityCmd.Angular.Z = omega;
+
+    % Send velocity command
+    send(cmdVelPub, velocityCmd);
+    odomMsg = receive(odomSub, 1); % Timeout in 1 second
+    corePose = [odomMsg.Pose.Pose.Position.X, ...
+                odomMsg.Pose.Pose.Position.Y];
+    coreTrajectory = [coreTrajectory; corePose]; % Append to trajectory
+
+    % Get Gazebo joint states for custom odometry
+    jointStateMsg = receive(gazeboJointStateSub, 1);
+    wheelPos = jointStateMsg.Position(1:2); % [left, right] wheel positions
+
+    % Calculate time delta
+    currentTime = jointStateMsg.Header.Stamp.Sec + jointStateMsg.Header.Stamp.Nsec * 1e-9;
+    if prevTime == 0
+        prevTime = currentTime;
+        prevWheelPos = wheelPos;
+        continue;
+    end
+    dt = currentTime - prevTime;
+    prevTime = currentTime;
+
+    % Calculate wheel displacements
+    dL = (wheelPos(2) - prevWheelPos(2)) * wheelRadius;
+    dR = (wheelPos(1) - prevWheelPos(1)) * wheelRadius;
+    prevWheelPos = wheelPos;
+
+    % Update custom pose using differential drive kinematics
+    dCenter = (dL + dR) / 2;
+    dTheta = (dR - dL) / wheelBase;
+    customPose(3) = customPose(3) + dTheta; % Update orientation
+    customPose(1) = customPose(1) + dCenter * cos(customPose(3)); % Update x
+    customPose(2) = customPose(2) + dCenter * sin(customPose(3)); % Update y
+    customTrajectory = [customTrajectory; customPose(1), customPose(2)]; % Append to trajectory
+
+    pause(0.1); % Pause for real-time processing
+end
+
+% Stop the TurtleBot
+velocityCmd.Linear.X = 0.0;   % Stop linear motion
+velocityCmd.Angular.Z = 0.0;  % Stop angular motion
+send(cmdVelPub, velocityCmd);
+
+% Plot the trajectories
+figure;
+plot(odeX, odeY, 'g-', 'LineWidth', 1.5, 'DisplayName', 'ODE Trajectory');
+hold on;
+plot(coreTrajectory(:,1), coreTrajectory(:,2), 'b-', 'LineWidth', 1.5, 'DisplayName', 'TurtleBot Core Odometry');
+plot(customTrajectory(:,1), customTrajectory(:,2), 'r--', 'LineWidth', 1.5, 'DisplayName', 'Custom Odometry (from Gazebo Encoders)');
+xlabel('X Position (m)');
+ylabel('Y Position (m)');
+title('Trajectory Comparison: ODE, TurtleBot Core, and Custom Odometry');
+legend;
+grid on;
+
+% Calculate final position differences
+finalCorePose = coreTrajectory(end, :);
+finalCustomPose = customTrajectory(end, :);
+finalODEPose = [odeX(end), odeY(end)];
+
+errorCustomCore = norm(finalODEPose - finalCustomPose);
+errorCoreCore = norm(finalODEPose - finalCorePose);
+
+% Display errors
+disp(['Error between Custom Odometry and ODE Trajectory: ', num2str(errorCustomCore), ' meters']);
+disp(['Error between ODE Trajectory and TurtleBot Core Odometry: ', num2str(errorODECore), ' meters']);
+
+

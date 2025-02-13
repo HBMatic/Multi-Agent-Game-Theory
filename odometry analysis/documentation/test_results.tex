@@ -1,0 +1,585 @@
+\documentclass{article}
+\usepackage[landscape, margin=.1in]{geometry} 
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{comment}
+\usepackage{caption}
+\usepackage{graphicx}
+\title{text}
+\captionsetup[figure]{labelformat=empty}
+
+\begin{document}
+	\begin{center}
+		$\bullet$ {\fontsize{18}{18}\selectfont Granite (outside lab)} \\	
+	\end{center}
+	
+	
+	\begin{minipage}{0.22\textwidth} % First plot
+		\centering % Center the content in the minipage
+		\begin{tikzpicture}[scale=0.7] % Reduced scale
+			\begin{axis}[
+				title={TB1 $v=0.05 \mbox{~and~} \omega=0.0$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				%legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_1/granite_testcase_1.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_1/granite_testcase_1.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_1/granite_testcase_1.txt};
+				\addlegendentry{$TB3_1$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm} % Small vertical space between the plot and the text
+		\textbf{error: $1.8408\times 10^{-4}$} % Centered error text
+	\end{minipage}%
+	\hspace*{0.025\textwidth}
+	\begin{minipage}{0.22\textwidth} % Second plot
+		\centering
+		\begin{tikzpicture}[scale=0.7]
+			\begin{axis}[
+				title={TB2 $v=0.05 \mbox{~and~} \omega=0.0$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_2/granite_testcase_1.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_2/granite_testcase_1.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_2/granite_testcase_1.txt};
+				\addlegendentry{$TB3_2$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm}
+		\textbf{error: $3.2326\times 10^{-4}$}
+	\end{minipage}%
+	\hfill
+	\begin{minipage}{0.22\textwidth} % Third plot
+		\centering
+		\begin{tikzpicture}[scale=0.7]
+			\begin{axis}[
+				title={TB3 $v=0.05 \mbox{~and~} \omega=0.0$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_3/granite_testcase_1.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_3/granite_testcase_1.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_3/granite_testcase_1.txt};
+				\addlegendentry{$TB3_3$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm}
+		\textbf{error: $4.6358\times 10^{-4}$}
+	\end{minipage}%
+	\hspace*{0.02\textwidth}
+	\begin{minipage}{0.22\textwidth} % Fourth plot
+		\centering
+		\begin{tikzpicture}[scale=0.7]
+			\begin{axis}[
+				title={TB4 $v=0.05 \mbox{~and~} \omega=0.0$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_4/granite_testcase_1.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_4/granite_testcase_1.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_4/granite_testcase_1.txt};
+				\addlegendentry{$TB3_4$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm}
+		\textbf{error: $4.9706\times 10^{-4}$}
+	\end{minipage}%
+	\hspace*{0.015\textwidth}
+	\vspace*{1cm}
+	
+	\hspace*{0.02\textwidth}
+	\begin{minipage}{0.22\textwidth} % First plot
+		\centering % Center the content in the minipage
+		\begin{tikzpicture}[scale=0.7] % Reduced scale
+			\begin{axis}[
+				title={TB1 $v=0.05 \mbox{~and~} \omega=0.1$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_1/granite_testcase_2.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_1/granite_testcase_2.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_1/granite_testcase_2.txt};
+				\addlegendentry{$TB3_1$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm} % Small vertical space between the plot and the text
+		\textbf{error: $2.3874\times 10^{-4}$} % Centered error text
+	\end{minipage}%
+	\hspace*{0.002\textwidth}
+	\begin{minipage}{0.22\textwidth} % Second plot
+		\centering
+		\begin{tikzpicture}[scale=0.7]
+			\begin{axis}[
+				title={TB2 $v=0.05 \mbox{~and~} \omega=0.1$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_2/granite_testcase_2.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_2/granite_testcase_2.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_2/granite_testcase_2.txt};
+				\addlegendentry{$TB3_2$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm}
+		\textbf{error: $6.1642\times 10^{-4}$}
+	\end{minipage}%
+	\hspace*{0.015\textwidth}
+	\begin{minipage}{0.22\textwidth} % Third plot
+		\centering
+		\begin{tikzpicture}[scale=0.7]
+			\begin{axis}[
+				title={TB3 $v=0.05 \mbox{~and~} \omega=0.1$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_3/granite_testcase_2.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_3/granite_testcase_2.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_3/granite_testcase_2.txt};
+				\addlegendentry{$TB3_3$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm}
+		\textbf{error: $4.5829\times 10^{-4}$}
+	\end{minipage}%
+	\hspace*{0.025\textwidth}
+	\begin{minipage}{0.22\textwidth} % Fourth plot
+		\centering
+		\begin{tikzpicture}[scale=0.7]
+			\begin{axis}[
+				title={TB4 $v=0.05 \mbox{~and~} \omega=0.1$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_4/granite_testcase_2.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_4/granite_testcase_2.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_4/granite_testcase_2.txt};
+				\addlegendentry{$TB3_4$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm}
+		\textbf{error: $9.877\times 10^{-4}$}
+	\end{minipage}%
+	\hspace*{0.02\textwidth}
+	\vspace*{1cm}
+	
+	\hspace*{0.02\textwidth}
+	\begin{minipage}{0.22\textwidth} % First plot
+		\centering % Center the content in the minipage
+		\begin{tikzpicture}[scale=0.7] % Reduced scale
+			\begin{axis}[
+				title={TB1 $v=0.1 \mbox{~and~} \omega=0.1$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_1/granite_testcase_3.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_1/granite_testcase_3.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_1/granite_testcase_3.txt};
+				\addlegendentry{$TB3_1$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm} % Small vertical space between the plot and the text
+		\textbf{error: $4.3827\times 10^{-4}$} % Centered error text
+	\end{minipage}%
+	\hspace*{0.002\textwidth}
+	\begin{minipage}{0.22\textwidth} % Second plot
+		\centering
+		\begin{tikzpicture}[scale=0.7]
+			\begin{axis}[
+				title={TB2 $v=0.1 \mbox{~and~} \omega=0.1$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_2/granite_testcase_3.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_2/granite_testcase_3.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_2/granite_testcase_3.txt};
+				\addlegendentry{$TB3_2$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm}
+		\textbf{error: $23\times 10^{-4}$}
+	\end{minipage}%
+	\hspace*{0.015\textwidth}
+	\begin{minipage}{0.22\textwidth} % Third plot
+		\centering
+		\begin{tikzpicture}[scale=0.7]
+			\begin{axis}[
+				title={TB3 $v=0.1 \mbox{~and~} \omega=0.1$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_3/granite_testcase_3.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_3/granite_testcase_3.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_3/granite_testcase_3.txt};
+				\addlegendentry{$TB3_3$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm}
+		\textbf{error: $25\times 10^{-4}$}
+	\end{minipage}%
+	\hspace*{0.025\textwidth}
+	\begin{minipage}{0.22\textwidth} % Fourth plot
+		\centering
+		\begin{tikzpicture}[scale=0.7]
+			\begin{axis}[
+				title={TB4 $v=0.1 \mbox{~and~} \omega=0.1$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_4/granite_testcase_3.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_4/granite_testcase_3.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_4/granite_testcase_3.txt};
+				\addlegendentry{$TB3_4$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm}
+		\textbf{error: $49\times 10^{-4}$}
+	\end{minipage}%
+	\hspace*{0.02\textwidth}
+	\newpage
+	\begin{center}
+		$\bullet$ {\fontsize{18}{18}\selectfont Tile (inside lab)} \\	
+	\end{center}
+
+	
+	\begin{minipage}{0.22\textwidth} % First plot
+		\centering % Center the content in the minipage
+		\begin{tikzpicture}[scale=0.7] % Reduced scale
+			\begin{axis}[
+				title={TB1 $v=0.05 \mbox{~and~} \omega=0.0$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				%legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_1/tile_testcase_1.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_1/tile_testcase_1.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_1/tile_testcase_1.txt};
+				\addlegendentry{$TB3_1$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm} % Small vertical space between the plot and the text
+		\textbf{error: $3.3463\times 10^{-4}$} % Centered error text
+	\end{minipage}%
+	\hspace*{0.025\textwidth}
+	\begin{minipage}{0.22\textwidth} % Second plot
+		\centering
+		\begin{tikzpicture}[scale=0.7]
+			\begin{axis}[
+				title={TB2 $v=0.05 \mbox{~and~} \omega=0.0$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_2/tile_testcase_1.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_2/tile_testcase_1.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_2/tile_testcase_1.txt};
+				\addlegendentry{$TB3_2$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm}
+		\textbf{error: $2.1883\times 10^{-4}$}
+	\end{minipage}%
+	\hfill
+	\begin{minipage}{0.22\textwidth} % Third plot
+		\centering
+		\begin{tikzpicture}[scale=0.7]
+			\begin{axis}[
+				title={TB3 $v=0.05 \mbox{~and~} \omega=0.0$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_3/tile_testcase_1.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_3/tile_testcase_1.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_3/tile_testcase_1.txt};
+				\addlegendentry{$TB3_3$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm}
+		\textbf{error: $6.4959\times 10^{-4}$}
+	\end{minipage}%
+	\hspace*{0.01\textwidth}
+	\begin{minipage}{0.22\textwidth} % Fourth plot
+		\centering
+		\begin{tikzpicture}[scale=0.7]
+			\begin{axis}[
+				title={TB4 $v=0.05 \mbox{~and~} \omega=0.0$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_4/tile_testcase_1.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_4/tile_testcase_1.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_4/tile_testcase_1.txt};
+				\addlegendentry{$TB3_4$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm}
+		\textbf{error: $3.7443\times 10^{-4}$}
+	\end{minipage}%
+	\hspace*{0.04\textwidth}
+	\vspace*{1cm}
+	
+	\hspace*{0.02\textwidth}
+	\begin{minipage}{0.22\textwidth} % First plot
+		\centering % Center the content in the minipage
+		\begin{tikzpicture}[scale=0.7] % Reduced scale
+			\begin{axis}[
+				title={TB1 $v=0.05 \mbox{~and~} \omega=0.1$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_1/tile_testcase_2.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_1/tile_testcase_2.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_1/tile_testcase_2.txt};
+				\addlegendentry{$TB3_1$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm} % Small vertical space between the plot and the text
+		\textbf{error: $2.1883\times 10^{-4}$} % Centered error text
+	\end{minipage}%
+	\hspace*{0.002\textwidth}
+	\begin{minipage}{0.22\textwidth} % Second plot
+		\centering
+		\begin{tikzpicture}[scale=0.7]
+			\begin{axis}[
+				title={TB2 $v=0.05 \mbox{~and~} \omega=0.1$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_2/tile_testcase_2.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_2/tile_testcase_2.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_2/tile_testcase_2.txt};
+				\addlegendentry{$TB3_2$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm}
+		\textbf{error: $4.7366\times 10^{-4}$}
+	\end{minipage}%
+	\hspace*{0.015\textwidth}
+	\begin{minipage}{0.22\textwidth} % Third plot
+		\centering
+		\begin{tikzpicture}[scale=0.7]
+			\begin{axis}[
+				title={TB3 $v=0.05 \mbox{~and~} \omega=0.1$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_3/tile_testcase_2.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_3/tile_testcase_2.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_3/tile_testcase_2.txt};
+				\addlegendentry{$TB3_3$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm}
+		\textbf{error: $11\times 10^{-4}$}
+	\end{minipage}%
+	\hspace*{0.025\textwidth}
+	\begin{minipage}{0.22\textwidth} % Fourth plot
+		\centering
+		\begin{tikzpicture}[scale=0.7]
+			\begin{axis}[
+				title={TB4 $v=0.05 \mbox{~and~} \omega=0.1$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_4/tile_testcase_2.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_4/tile_testcase_2.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_4/tile_testcase_2.txt};
+				\addlegendentry{$TB3_4$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm}
+		\textbf{error: $11\times 10^{-4}$}
+	\end{minipage}%
+	\hspace*{0.02\textwidth}
+	\vspace*{1cm}
+	
+	\hspace*{0.02\textwidth}
+	\begin{minipage}{0.22\textwidth} % First plot
+		\centering % Center the content in the minipage
+		\begin{tikzpicture}[scale=0.7] % Reduced scale
+			\begin{axis}[
+				title={TB1 $v=0.1 \mbox{~and~} \omega=0.1$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_1/tile_testcase_3.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_1/tile_testcase_3.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_1/tile_testcase_3.txt};
+				\addlegendentry{$TB3_1$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm} % Small vertical space between the plot and the text
+		\textbf{error: $24\times 10^{-4}$} % Centered error text
+	\end{minipage}%
+	\hspace*{0.002\textwidth}
+	\begin{minipage}{0.22\textwidth} % Second plot
+		\centering
+		\begin{tikzpicture}[scale=0.7]
+			\begin{axis}[
+				title={TB2 $v=0.1 \mbox{~and~} \omega=0.1$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_2/tile_testcase_3.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_2/tile_testcase_3.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_2/tile_testcase_3.txt};
+				\addlegendentry{$TB3_2$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm}
+		\textbf{error: $22\times 10^{-4}$}
+	\end{minipage}%
+	\hspace*{0.015\textwidth}
+	\begin{minipage}{0.22\textwidth} % Third plot
+		\centering
+		\begin{tikzpicture}[scale=0.7]
+			\begin{axis}[
+				title={TB3 $v=0.1 \mbox{~and~} \omega=0.1$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_3/tile_testcase_3.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_3/tile_testcase_3.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_3/tile_testcase_3.txt};
+				\addlegendentry{$TB3_3$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm}
+		\textbf{error: $17\times 10^{-4}$}
+	\end{minipage}%
+	\hspace*{0.025\textwidth}
+	\begin{minipage}{0.22\textwidth} % Fourth plot
+		\centering
+		\begin{tikzpicture}[scale=0.7]
+			\begin{axis}[
+				title={TB4 $v=0.1 \mbox{~and~} \omega=0.1$},
+				xlabel={X-axis},
+				ylabel={Y-axis},
+				grid=major,
+				%legend style={font=\tiny, at={(1,1)}, anchor=north east}
+				legend pos=north west
+				]
+				\addplot[smooth, thick, blue] table[x index=0, y index=1] {tb_4/tile_testcase_3.txt};
+				\addlegendentry{ode}
+				\addplot[smooth, thick, red] table[x index=2, y index=3] {tb_4/tile_testcase_3.txt};
+				\addlegendentry{Gazebo}
+				\addplot[smooth, thick, green] table[x index=4, y index=5] {tb_4/tile_testcase_3.txt};
+				\addlegendentry{$TB3_4$}
+			\end{axis}
+		\end{tikzpicture}
+		\vspace{1mm}
+		\textbf{error: $44\times 10^{-4}$}
+	\end{minipage}%
+	\hspace*{0.02\textwidth}
+\end{document}

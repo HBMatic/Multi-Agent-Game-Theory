@@ -1,0 +1,215 @@
+clear;
+clc;
+
+%% Initialize ROS
+rosinit;
+
+% Publishers and Subscribers
+cmdVelPubReal = rospublisher('/tb3_3/cmd_vel', 'geometry_msgs/Twist'); % Real TurtleBot velocity command
+cmdVelPubGazebo = rospublisher('/cmd_vel', 'geometry_msgs/Twist');     % Gazebo TurtleBot velocity command
+odomSubReal = rossubscriber('/tb3_3/odom', 'nav_msgs/Odometry');       % Real TurtleBot core odometry
+odomSubGazebo = rossubscriber('/odom', 'nav_msgs/Odometry');           % Gazebo TurtleBot odometry
+jointStateSubReal = rossubscriber('/tb3_3/joint_states', 'sensor_msgs/JointState'); % Real TurtleBot joint states
+jointStateSubGazebo = rossubscriber('/joint_states', 'sensor_msgs/JointState');    % Gazebo joint states
+imuSubReal = rossubscriber('/tb3_3/imu', 'sensor_msgs/Imu');           % Real TurtleBot IMU data
+imuSubGazebo = rossubscriber('/imu', 'sensor_msgs/Imu');               % Gazebo TurtleBot IMU data
+
+% Dynamics
+v = 0.1;       % Linear velocity (m/s)
+omega = 0.1;   % Angular velocity (rad/s)
+duration = 20 * pi; % Duration in seconds
+
+% Get initial pose from TurtleBot core odometry
+disp('Waiting for initial pose...');
+odomMsgReal = receive(odomSubReal, 1); % Wait for the first odometry message
+imuMsgReal = receive(imuSubReal, 1);
+imuMsgGazebo = receive(imuSubGazebo, 1);
+x0 = odomMsgReal.Pose.Pose.Position.X;
+y0 = odomMsgReal.Pose.Pose.Position.Y;
+quat0 = [odomMsgReal.Pose.Pose.Orientation.W, ...
+        odomMsgReal.Pose.Pose.Orientation.X, ...
+        odomMsgReal.Pose.Pose.Orientation.Y,...
+        odomMsgReal.Pose.Pose.Orientation.Z];        
+euler = quat2eul(quat0); % Convert quaternion to Euler angles
+theta0 = euler(1); % Extract the yaw angle (theta)
+quat1 = [imuMsgReal.Orientation.W, ...
+        imuMsgReal.Orientation.X, ...
+        imuMsgReal.Orientation.Y, ...
+        imuMsgReal.Orientation.Z];
+euler = quat2eul(quat1); % Convert quaternion to Euler angles
+theta1 = euler(1); % Extract the yaw angle (theta)
+quat2 = [imuMsgGazebo.Orientation.W, ...
+        imuMsgGazebo.Orientation.X, ...
+        imuMsgGazebo.Orientation.Y, ...
+        imuMsgGazebo.Orientation.Z];
+euler = quat2eul(quat2);
+theta2 = euler(1);
+% Reset Gazebo TurtleBot position
+% This step requires a custom service call to reset the Gazebo simulation.
+% For simplicity, ensure Gazebo is reset manually before running this script.
+
+%% ODE system
+ode_system = @(t, state) [
+    v * cos(state(3));   % dx/dt
+    v * sin(state(3));   % dy/dt
+    omega              % dtheta/dt
+];
+initial_conditions = [x0, y0, theta0]; 
+[t, solution] = ode45(ode_system, 0:0.2:duration, initial_conditions);
+
+% Extract ODE trajectory
+odeX = solution(:, 1);
+odeY = solution(:, 2);
+
+% Robot parameters
+wheelRadius = 0.033; % meters
+wheelBase = 0.16;    % meters
+
+% Initialize poses
+customPoseReal = [x0, y0, theta0]; % Custom odometry for real TurtleBot
+customPoseGazebo = [x0, y0, theta0]; % Custom odometry for Gazebo TurtleBot
+prevWheelPosReal = [0, 0];
+prevWheelPosGazebo = [0, 0];
+prevTimeReal = 0;
+prevTimeGazebo = 0;
+
+% Data storage
+coreTrajectory = [x0, y0];         % TurtleBot Core Odometry
+gazeboTrajectory = [x0, y0];       % Gazebo TurtleBot Odometry
+customTrajectoryReal = [x0, y0];   % Custom Core Odometry
+customTrajectoryGazebo = [x0, y0]; % Custom Gazebo Odometry
+
+% Set velocity command
+velocityCmdReal = rosmessage(cmdVelPubReal);
+velocityCmdGazebo = rosmessage(cmdVelPubGazebo);
+disp('Running simulation...');
+tic;  % Start timer
+while toc < duration
+  
+    velocityCmdReal.Linear.X = v;
+    velocityCmdReal.Angular.Z = omega;
+    velocityCmdGazebo.Linear.X = v;
+    velocityCmdGazebo.Angular.Z = omega;
+
+    % Send velocity commands
+    send(cmdVelPubReal, velocityCmdReal);
+    send(cmdVelPubGazebo, velocityCmdGazebo);
+    % Real TurtleBot Core Odometry
+    odomMsgReal = receive(odomSubReal, 1); % Timeout in 1 second
+    corePose = [odomMsgReal.Pose.Pose.Position.X, ...
+                odomMsgReal.Pose.Pose.Position.Y];
+    coreTrajectory = [coreTrajectory; corePose]; % Append to trajectory
+
+    % Gazebo TurtleBot Odometry
+    odomMsgGazebo = receive(odomSubGazebo, 1); % Timeout in 1 second
+    gazeboPose = [odomMsgGazebo.Pose.Pose.Position.X, ...
+                  odomMsgGazebo.Pose.Pose.Position.Y];
+    gazeboTrajectory = [gazeboTrajectory; gazeboPose]; % Append to trajectory
+    
+    % Custom Core Odometry with IMU orientation
+    jointStateMsgReal = receive(jointStateSubReal, 1);
+    wheelPosReal = jointStateMsgReal.Position(1:2);
+    currentTimeReal = jointStateMsgReal.Header.Stamp.Sec + ...
+                  jointStateMsgReal.Header.Stamp.Nsec * 1e-9;
+
+    % Get IMU data for orientation
+    imuMsgReal = receive(imuSubReal, 1);
+    quatIMUReal = [imuMsgReal.Orientation.W, ...
+               imuMsgReal.Orientation.X, ...
+               imuMsgReal.Orientation.Y, ...
+               imuMsgReal.Orientation.Z];
+    eulerIMUReal = quat2eul(quatIMUReal);
+    thetaReal = eulerIMUReal(1); % Use IMU for orientation
+
+    if prevTimeReal > 0
+        dtReal = currentTimeReal - prevTimeReal;
+        dLReal = (wheelPosReal(1) - prevWheelPosReal(1)) * wheelRadius;
+        dRReal = (wheelPosReal(2) - prevWheelPosReal(2)) * wheelRadius;
+        dCenterReal = (dLReal + dRReal) / 2;
+        dThetaReal = (dRReal - dLReal) / wheelBase;
+    
+        % Update position using wheel odometry and apply transforms
+        % First, calculate position in base_link frame
+        customPoseReal(1) = customPoseReal(1) + dCenterReal * cos(thetaReal);
+        customPoseReal(2) = customPoseReal(2) + dCenterReal * sin(thetaReal);
+        customPoseReal(3) = customPoseReal(3) + (thetaReal - theta1); % Orientation remains the same
+    end
+    prevWheelPosReal = wheelPosReal;
+    prevTimeReal = currentTimeReal;
+    customTrajectoryReal = [customTrajectoryReal; customPoseReal(1:2)];
+
+    % Custom Gazebo Odometry with IMU orientation
+    jointStateMsgGazebo = receive(jointStateSubGazebo, 1);
+    wheelPosGazebo = jointStateMsgGazebo.Position(1:2);
+    currentTimeGazebo = jointStateMsgGazebo.Header.Stamp.Sec + ...
+                        jointStateMsgGazebo.Header.Stamp.Nsec * 1e-9;
+    imuMsgGazebo = receive(imuSubGazebo, 1);
+    quatIMUGazebo = [imuMsgGazebo.Orientation.W, ...
+                     imuMsgGazebo.Orientation.X, ...
+                     imuMsgGazebo.Orientation.Y, ...
+                     imuMsgGazebo.Orientation.Z];
+    eulerIMUGazebo = quat2eul(quatIMUGazebo);
+    thetaGazebo = eulerIMUGazebo(1); % Use IMU for orientation
+    
+    if prevTimeGazebo > 0
+        dtGazebo = currentTimeGazebo - prevTimeGazebo;
+        dLGazebo = (wheelPosGazebo(2) - prevWheelPosGazebo(2)) * wheelRadius;
+        dRGazebo = (wheelPosGazebo(1) - prevWheelPosGazebo(1)) * wheelRadius;
+        dCenterGazebo = (dLGazebo + dRGazebo) / 2;
+        customPoseGazebo(1) = customPoseGazebo(1) + dCenterGazebo * cos(thetaGazebo);
+        customPoseGazebo(2) = customPoseGazebo(2) + dCenterGazebo * sin(thetaGazebo);
+        customPoseGazebo(3) = customPoseGazebo(3) + (thetaGazebo - theta2); % Update orientation from IMU
+    end
+    prevWheelPosGazebo = wheelPosGazebo;
+    prevTimeGazebo = currentTimeGazebo;
+    customTrajectoryGazebo = [customTrajectoryGazebo; customPoseGazebo(1:2)];
+
+    pause(0.1); % Pause for real-time processing
+end
+
+% Stop the robots
+velocityCmdReal.Linear.X = 0.0;
+velocityCmdReal.Angular.Z = 0.0;
+send(cmdVelPubReal, velocityCmdReal);
+velocityCmdGazebo.Linear.X = 0.0;
+velocityCmdGazebo.Angular.Z = 0.0;
+send(cmdVelPubGazebo, velocityCmdGazebo);
+
+% Plot the trajectories
+figure;
+plot(odeX, odeY, 'g-', 'LineWidth', 1.5, 'DisplayName', 'ODE Trajectory');
+hold on;
+plot(coreTrajectory(:,1), coreTrajectory(:,2), 'b-', 'LineWidth', 1.5, 'DisplayName', 'TurtleBot Core Odometry');
+plot(gazeboTrajectory(:,1), gazeboTrajectory(:,2), 'm-', 'LineWidth', 1.5, 'DisplayName', 'Gazebo Odometry');
+plot(customTrajectoryReal(:,1), customTrajectoryReal(:,2), 'r--', 'LineWidth', 1.5, 'DisplayName', 'Custom Core Odometry');
+plot(customTrajectoryGazebo(:,1), customTrajectoryGazebo(:,2), 'c--', 'LineWidth', 1.5, 'DisplayName', 'Custom Gazebo Odometry');
+xlabel('X Position (m)');
+ylabel('Y Position (m)');
+title('Trajectory Comparison: ODE, TurtleBot, Gazebo, and Custom Odometry');
+legend;
+grid on;
+
+% Calculate final position differences
+finalCorePose = coreTrajectory(end, :);
+finalGazeboPose = gazeboTrajectory(end, :);
+finalCustomPoseReal = customTrajectoryReal(end, :);
+finalCustomPoseGazebo = customTrajectoryGazebo(end, :);
+finalODEPose = [odeX(end), odeY(end)];
+errorCustomCoreCustomGazebo = norm(finalCustomPoseReal - finalCustomPoseGazebo)*100;
+errorCustomCoreCore = norm(finalCustomPoseReal - finalCorePose)*100;
+errorCustomGazeboGazebo = norm(finalCustomPoseGazebo - finalGazeboPose)*100;
+errorODECustomCore = norm(finalODEPose - finalCustomPoseReal)*100;
+errorODECustomGazebo = norm(finalODEPose - finalCustomPoseGazebo)*100;
+errorODECore = norm(finalODEPose - finalCorePose)*100;
+errorODEGazebo = norm(finalODEPose - finalGazeboPose)*100;
+
+% Display errors
+disp(['Error between Custom Core and Custom Gazebo: ', num2str(errorCustomCoreCustomGazebo), ' centimeters']);
+disp(['Error between Custom Core and TurtleBot Core: ', num2str(errorCustomCoreCore), ' centimeters']);
+disp(['Error between Custom Gazebo and TurtleBot Gazebo: ', num2str(errorCustomGazeboGazebo), ' centimeters']);
+disp(['Error between ODE and Custom Core: ', num2str(errorODECustomCore), ' centimeters']);
+disp(['Error between ODE and Custom Gazebo: ', num2str(errorODECustomGazebo), ' centimeters']);
+disp(['Error between ODE and TurtleBot Core: ', num2str(errorODECore), ' centimeters']);
+disp(['Error between ODE and TurtleBot Gazebo: ', num2str(errorODEGazebo), ' centimeters']);
+% Shutdown ROS
+rosshutdown;

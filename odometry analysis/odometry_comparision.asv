@@ -1,0 +1,115 @@
+% Publishers and Subscribers
+cmdVelPub = rospublisher('/tb3_2/cmd_vel', 'geometry_msgs/Twist'); % Velocity command publisher
+odomSub = rossubscriber('/tb3_2/odom', 'nav_msgs/Odometry');       % TurtleBot core odometry
+jointStateSub = rossubscriber('/tb3_2/joint_states', 'sensor_msgs/JointState'); % Joint states for encoder data
+
+% dynamics
+[x1, y1, theta]=get_current_pose(odomSub);
+v = 0.1;   
+omega = 0.1;
+duration=30;
+ode_system = @(t, state) [
+    v * cos(state(3));   % dx/dt
+    v * sin(state(3));   % dy/dt
+    omega              % dtheta/dt
+];
+
+initial_conditions = [x1, y1, theta(1)]; 
+
+
+[t, solution] = ode45(ode_system, 0:0.2:duration, initial_conditions);
+
+x = solution(:, 1);
+y = solution(:, 2);
+theta = solution(:, 3);
+
+% Robot parameters
+wheelRadius = 0.033; % meters
+wheelBase = 0.16;    % meters
+prevWheelPos = [0, 0]; % [left, right] wheel positions
+customPose = [0, 0, 0]; % [x, y, theta]
+prevTime = 0;
+
+% Data storage
+coreTrajectory = [];  % Store TurtleBot core odometry trajectory
+customTrajectory = []; % Store custom odometry trajectory
+
+% Set velocity command
+velocityCmd = rosmessage(cmdVelPub);
+ % omega = 0.1 rad/s
+
+% Send velocity command
+
+
+% Run for 30 seconds
+disp('Running for 30 seconds with v=0.1 m/s and omega=0.1 rad/s...');
+tic;  % Timer for recording duration
+while toc < 30
+    % Get TurtleBot core odometry
+    velocityCmd.Linear.X = 0.1;   % v = 0.1 m/s
+    velocityCmd.Angular.Z = 0.1; 
+    send(cmdVelPub, velocityCmd);
+    odomMsg = receive(odomSub, 1); % Timeout in 1 second
+    corePose = [odomMsg.Pose.Pose.Position.X, ...
+                odomMsg.Pose.Pose.Position.Y];
+    coreTrajectory = [coreTrajectory; corePose]; % Append to trajectory
+    
+    % Get Joint States
+    jointStateMsg = receive(jointStateSub, 1);
+    wheelPos = jointStateMsg.Position(1:2); % [left, right] wheel positions
+
+    % Calculate time delta
+    currentTime = jointStateMsg.Header.Stamp.Sec + jointStateMsg.Header.Stamp.Nsec * 1e-9;
+    if prevTime == 0
+        prevTime = currentTime;
+        prevWheelPos = wheelPos;
+        continue;
+    end
+    dt = currentTime - prevTime;
+    prevTime = currentTime;
+
+    % Calculate wheel displacements
+    dL = (wheelPos(1) - prevWheelPos(1)) * wheelRadius;
+    dR = (wheelPos(2) - prevWheelPos(2)) * wheelRadius;
+    prevWheelPos = wheelPos;
+
+    % Update custom pose using differential drive kinematics
+    dCenter = (dL + dR) / 2;
+    dTheta = (dR - dL) / wheelBase;
+    customPose(3) = customPose(3) + dTheta; % Update orientation
+    customPose(1) = customPose(1) + dCenter * cos(customPose(3)); % Update x
+    customPose(2) = customPose(2) + dCenter * sin(customPose(3)); % Update y
+    customTrajectory = [customTrajectory; customPose(1), customPose(2)]; % Append to trajectory
+
+    pause(0.1); % Pause for real-time processing
+end
+
+% Stop the TurtleBot
+velocityCmd.Linear.X = 0.0;   % Stop linear motion
+velocityCmd.Angular.Z = 0.0;  % Stop angular motion
+send(cmdVelPub, velocityCmd);
+
+% Shutdown ROS
+rosshutdown;
+
+% Plot the trajectories
+figure;
+plot(x, y, 'g', 'LineWidth', 1.5,'DisplayName','ode');
+hold on;
+plot(coreTrajectory(:,1), coreTrajectory(:,2), 'b-', 'LineWidth', 1.5, 'DisplayName', 'TurtleBot Core Odometry');
+hold on;
+plot(customTrajectory(:,1), customTrajectory(:,2), 'r--', 'LineWidth', 1.5, 'DisplayName', 'Custom Odometry');
+xlabel('X Position (m)');
+ylabel('Y Position (m)');
+title('Trajectory Comparison: TurtleBot Core vs Custom Odometry');
+legend;
+grid on;
+
+% Calculate the difference in final positions
+finalCorePose = coreTrajectory(end, :);
+finalCustomPose = customTrajectory(end, :);
+positionDifference = norm(finalCorePose - finalCustomPose);
+
+% Display the final position difference
+disp(['Final Position Difference: ', num2str(positionDifference), ' meters']);
+

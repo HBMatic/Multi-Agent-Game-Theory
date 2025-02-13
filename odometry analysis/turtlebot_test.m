@@ -1,0 +1,131 @@
+%% dynamics
+
+sub = rossubscriber('/tb3_2/odom', 'nav_msgs/Odometry');
+[x1, y1, theta]=get_current_pose(sub);
+v = 0.1;   
+omega = 0.1;
+duration= 30;
+ode_system = @(t, state) [
+    v * cos(state(3));   % dx/dt
+    v * sin(state(3));   % dy/dt
+    omega              % dtheta/dt
+];
+
+initial_conditions = [x1, y1, theta(1)]; 
+
+
+[t, solution] = ode45(ode_system, 0:0.2:duration, initial_conditions);
+
+x = solution(:, 1);
+y = solution(:, 2);
+theta = solution(:, 3);
+
+%% robot_imp_test
+pub_gazebo = rospublisher('/cmd_vel', 'geometry_msgs/Twist');
+pub_tb3 = rospublisher('/tb3_2/cmd_vel', 'geometry_msgs/Twist');
+sub_gazebo = rossubscriber('/odom', 'nav_msgs/Odometry');
+sub_tb3 = rossubscriber('/tb3_2/odom', 'nav_msgs/Odometry');
+odomlog_tb3=[];
+odomlog_gazebo=[];
+figure;
+plot(x, y, 'b', 'LineWidth', 1.5,'DisplayName','ode');
+hold on;
+h_tb3_0 = animatedline('Color', 'r', 'LineWidth', 1.5,'DisplayName','Gazebo');
+h_tb3_1 = animatedline('Color', 'g', 'LineWidth', 1.5,'DisplayName','TB3');
+axis equal;
+xlabel('X Position');
+ylabel('Y Position');   
+txt = {['Trajectories of Robot with v =',num2str(v),',\omega =',num2str(omega),''],'.'};
+title(txt);
+legend;
+% title('Real-Time Robot Path');
+grid on;
+hold on;
+
+msg_gazebo = rosmessage(pub_gazebo);
+msg_tb3=rosmessage(pub_tb3);
+msg_gazebo.Linear.X = v;    % Linear velocity
+msg_gazebo.Angular.Z = omega;   % Angular velocity
+msg_tb3.Linear.X = v;
+msg_tb3.Angular.Z = omega;
+rate = rosrate(5);
+[x_gazebo, y_gazebo, theta_gazebo]=get_current_pose(sub_gazebo);
+[x_tb3, y_tb3, theta_tb3]=get_current_pose(sub_tb3);
+odomlog_gazebo = [odomlog_gazebo ; x_gazebo,y_gazebo];
+odomlog_tb3 = [odomlog_tb3;x_tb3,y_tb3];
+addpoints(h_tb3_0,x_gazebo,y_gazebo);
+addpoints(h_tb3_1,x_tb3,y_tb3);
+disp('Node has been started.')
+
+% duration = 10; 
+tic;           
+
+while toc < duration    
+    send(pub_gazebo, msg_gazebo);
+    send(pub_tb3,msg_tb3);
+    [x_gazebo, y_gazebo, theta_gazebo]=get_current_pose(sub_gazebo);
+    [x_tb3,y_tb3, theta_tb3]=get_current_pose(sub_tb3);
+    odomlog_gazebo = [odomlog_gazebo ; x_gazebo,y_gazebo];
+    odomlog_tb3 = [odomlog_tb3;x_tb3,y_tb3];
+    addpoints(h_tb3_0,x_gazebo,y_gazebo);
+    addpoints(h_tb3_1,x_tb3,y_tb3);
+    drawnow;
+    waitfor(rate);
+end
+
+msg_gazebo.Linear.X = 0;
+msg_gazebo.Angular.Z = 0;
+msg_tb3.Linear.X=0;
+msg_tb3.Angular.Z=0;
+send(pub_gazebo, msg_gazebo);
+send(pub_tb3, msg_tb3);
+% clear('pub');
+% clear('sub');
+
+disp('Node has stopped.');
+
+%% error_cal
+odomlog_tb3(:,3) = interp1(odomlog_gazebo(:,1), odomlog_gazebo(:,2), odomlog_tb3(:,1));
+error = odomlog_tb3(:,3) - odomlog_tb3(:,2);
+mse = 0;
+ncount = 0;
+
+for i = 1:length(error)
+    if isnan(error(i))
+        ncount = ncount + 1;
+    else
+        mse = mse + error(i)^2;
+    end
+end
+
+mse = mse / (length(error) - ncount);
+disp(mse);  
+
+name = input('Enter file name: ', 's');
+output = {x, y, odomlog_gazebo, odomlog_tb3};
+
+save(['gaz_vs_tb_ode/tb_4/', name, '.mat'], 'output');
+
+fileName = ['documentation/tb_4/', name, '.txt'];
+fileID = fopen(fileName, 'w');
+if fileID == -1
+    error('Failed to create file: %s', fileName);
+end
+
+maxRows = max(cellfun(@(data) size(data, 1), output));
+
+for row = 1:maxRows
+    for col = 1:length(output)
+        data = output{col};
+        [rows, cols] = size(data);
+        
+        if row <= rows
+            fprintf(fileID, '%-10.6f', data(row, :));
+        else
+            fprintf(fileID, '%-10.6f', NaN(1, cols));
+        end
+    end
+    fprintf(fileID, '\n');
+end
+
+fclose(fileID);
