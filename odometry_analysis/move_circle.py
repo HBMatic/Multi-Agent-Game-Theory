@@ -27,7 +27,7 @@ def move_circle(duration, linear_velocity=0.1, angular_velocity=0.1):
 
 if __name__ == '__main__':
     try:
-        duration = 20 * 3.14159  # Example duration
+        duration = 20 * 3.14159 + 2 # Example duration
         move_circle(duration)
     except rospy.ROSInterruptException:
         pass

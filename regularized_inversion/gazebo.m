@@ -1,0 +1,97 @@
+% Initialize ROS Node
+rosinit;
+
+% Create publishers and subscribers
+velPub = rospublisher('/cmd_vel', 'geometry_msgs/Twist');
+modelStatePub = rospublisher('/gazebo/set_model_state', 'gazebo_msgs/ModelState');
+jointStateSub = rossubscriber('/joint_states');
+
+% Define velocity ranges
+N=50;
+vRange = linspace(-0.5,0.5,N);
+wRange = linspace(-3,3,N);
+
+% Initialize matrices to store results
+vActual = zeros(length(vRange)*length(wRange), 1);
+wActual = zeros(length(vRange)*length(wRange), 1);
+vCmd = zeros(length(vRange)*length(wRange), 1);
+wCmd = zeros(length(vRange)*length(wRange), 1);
+
+% Initialize previous wheel positions and time
+prevWheelPosGazebo = [0; 0];
+prevTimeGazebo = 0;
+
+% Initialize table to store final results
+resultsTable = table('Size', [length(vRange)*length(wRange), 4], ...
+                     'VariableTypes', {'double', 'double', 'double', 'double'}, ...
+                     'VariableNames', {'vCmd', 'wCmd', 'vAct', 'wAct'});
+
+% Iterate through all velocity combinations
+idx = 1;
+for v = vRange
+    for w = wRange
+        % Reset TurtleBot3 position
+        msg = rosmessage(modelStatePub);
+        msg.ModelName = 'turtlebot3_burger';
+        msg.Pose.Position.X = 0;
+        msg.Pose.Position.Y = 0;
+        msg.Pose.Position.Z = 0;
+        msg.Pose.Orientation.W = 1; % No rotation
+        msg.Twist.Linear.X = 0;
+        msg.Twist.Angular.Z = 0;
+        send(modelStatePub, msg);
+        
+        % Initialize arrays to store velocities over time
+        vCmds = zeros(100, 1); % Assuming 10 Hz sampling rate
+        wCmds = zeros(100, 1);
+        vActs = zeros(100, 1);
+        wActs = zeros(100, 1);
+        
+        % Publish velocity command and start moving
+        velMsg = rosmessage(velPub);
+        velMsg.Linear.X = v;
+        velMsg.Angular.Z = w;
+        send(velPub, velMsg);
+        
+        % Move for 10 seconds and collect data
+        tic;
+        for i = 1:100 % Assuming 10 Hz sampling rate
+            % Calculate actual velocities
+            [vAct, wAct, prevWheelPosGazebo, prevTimeGazebo] = velocity_cal(jointStateSub, prevWheelPosGazebo, prevTimeGazebo);
+            
+            % Store velocities
+            vCmds(i) = v;
+            wCmds(i) = w;
+            vActs(i) = vAct;
+            wActs(i) = wAct;
+            
+            % Wait for the next sample
+            pause(0.1);
+            
+            % Check if 10 seconds have passed
+            if toc > 10
+                break;
+            end
+        end
+        
+        % Average velocities over the sampling period
+        vCmdAvg = mean(vCmds(1:i));
+        wCmdAvg = mean(wCmds(1:i));
+        vActAvg = mean(vActs(1:i));
+        wActAvg = mean(wActs(1:i));
+        
+        % Store averaged values in the table
+        resultsTable.vCmd(idx) = vCmdAvg;
+        resultsTable.wCmd(idx) = wCmdAvg;
+        resultsTable.vAct(idx) = vActAvg;
+        resultsTable.wAct(idx) = wActAvg;
+        
+        idx = idx + 1;
+    end
+end
+
+% Display results table
+disp(resultsTable);
+
+% Clean up
+rosshutdown;

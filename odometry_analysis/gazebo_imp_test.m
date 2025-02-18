@@ -1,6 +1,6 @@
 % clc;close all;clear all;
 %% dynamics
-sub = rossubscriber('/odom', 'nav_msgs/Odometry');
+sub = rossubscriber('/tb3_2/odom', 'nav_msgs/Odometry');
 [x1, y1, theta]=get_current_pose(sub);
 v = 0.1;   
 omega = 0.1;
@@ -24,8 +24,8 @@ theta = solution(:, 3);
 
 %% gazebo
 % load('xy.mat');
-pub = rospublisher('/cmd_vel', 'geometry_msgs/Twist');
-sub = rossubscriber('/odom', 'nav_msgs/Odometry');
+pub = rospublisher('/tb3_2/cmd_vel', 'geometry_msgs/Twist');
+sub = rossubscriber('/tb3_2/odom', 'nav_msgs/Odometry');
 odomlog=[];
 figure;
 plot(x, y, 'b', 'LineWidth', 1.5);

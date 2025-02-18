@@ -10,8 +10,8 @@ function [v, w, prevWheelPosGazebo, prevTimeGazebo] = velocity_cal(jointStateSub
     
     if prevTimeGazebo > 0
         dt = currentTimeGazebo - prevTimeGazebo;
-        dvl = (wheelPosGazebo(2) - prevWheelPosGazebo(2)) / dt;
-        dvr = (wheelPosGazebo(1) - prevWheelPosGazebo(1)) / dt;
+        dvl = 0.03333*(wheelPosGazebo(2) - prevWheelPosGazebo(2)) / dt;
+        dvr = 0.03333*(wheelPosGazebo(1) - prevWheelPosGazebo(1)) / dt;
         v = (dvl + dvr) / 2;
         w = (dvr - dvl) / wheelBase;
     end

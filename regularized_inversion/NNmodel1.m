@@ -1,0 +1,137 @@
+%% Joint Training of Forward and Inverse Models with Two Hidden Layers and Adaptive Learning Rate
+% This script demonstrates joint training of:
+%   - netF: A forward network that maps inputs X (=[vi, wi]) to outputs Y (=[vo, wo])
+%   - netI: An inverse network that maps outputs Y back to inputs X.
+%
+% Each network uses two hidden layers.
+% The loss function is a composite of:
+%   • Forward loss:    ||netF(X) - Y||^2
+%   • Inverse loss:    ||netI(Y) - X||^2
+%   • Consistency loss:||netI(netF(X)) - X||^2 + ||netF(netI(Y)) - Y||^2
+%
+% The training loop uses the Adam optimizer with an adaptive learning rate,
+% which decays by a factor every fixed number of epochs.
+%
+% Replace the synthetic data with your measured samples as needed.
+clear all
+%% Synthetic Data Generation
+load('gazebo_test_3.mat');
+M=table2array(resultsTable);
+N=size(M,1);
+X=M(:,1:2);
+Y=M(:,3:4);
+
+%N = 1000;
+% Generate N random inputs in the range [-1, 1] (each row is [vi, wi])
+%X(:,1) = 0.27*(-1 + 2 * rand(N, 1));
+%X(:,2) = 3*(-1 +2 *rand(N,1));
+
+% Define an invertible forward mapping:
+% Example: vo = exp(vi)*cos(wi),  wo = exp(vi)*sin(wi)
+%Y_vo = exp(X(:,1)) .* cos(X(:,2));
+%Y_wo = exp(X(:,1)) .* sin(X(:,2));
+%Y = [Y_vo, Y_wo];
+
+% Convert data to dlarray format (features x batch)
+Xdl = dlarray(X','CB');  % 'CB' means: Channels x Batch (size: 2 x N)
+Ydl = dlarray(Y','CB');  % (size: 2 x N)
+
+%% Define Forward Network (netF) with Two Hidden Layers (Mapping: X -> Y)
+layersF = [
+    featureInputLayer(2, 'Normalization','none', 'Name','input')
+    fullyConnectedLayer(10, 'Name','fc1')
+    tanhLayer('Name','tanh1')
+    fullyConnectedLayer(5, 'Name','fc2')
+    tanhLayer('Name','tanh2')
+    fullyConnectedLayer(2, 'Name','fc3')
+    ];
+lgraphF = layerGraph(layersF);
+netF = dlnetwork(lgraphF);
+
+%% Define Inverse Network (netI) with Two Hidden Layers (Mapping: Y -> X)
+layersI = [
+    featureInputLayer(2, 'Normalization','none', 'Name','input')
+    fullyConnectedLayer(5, 'Name','fc1')
+    tanhLayer('Name','tanh1')
+    fullyConnectedLayer(10, 'Name','fc2')
+    tanhLayer('Name','tanh2')
+    fullyConnectedLayer(2, 'Name','fc3')
+    ];
+lgraphI = layerGraph(layersI);
+netI = dlnetwork(lgraphI);
+
+%% Training Settings
+numEpochs = 20000;
+initialLearningRate = 1e-2;
+learningRate = initialLearningRate;  % Starting learning rate
+consistencyWeight = 10.0;             % Weight for the consistency loss
+
+% Learning rate decay settings:
+decayEpochs = 500;     % Every 250 epochs, update the learning rate.
+decayFactor = 0.9;     % Multiply learning rate by 0.9 at each decay event.
+
+% Initialize Adam optimizer parameters for both networks
+trailingAvgF = [];
+trailingAvgSqF = [];
+trailingAvgI = [];
+trailingAvgSqI = [];
+iteration = 0;
+
+%% Training Loop with Adaptive Learning Rate
+lossHistory = zeros(numEpochs,1);
+for epoch = 1:numEpochs
+    iteration = iteration + 1;
+    
+    % Evaluate loss and gradients using automatic differentiation
+    [loss, gradientsF, gradientsI] = dlfeval(@modelLoss, netF, netI, Xdl, Ydl, consistencyWeight);
+    
+    % Update network parameters using the Adam optimizer
+    [netF, trailingAvgF, trailingAvgSqF] = adamupdate(netF, gradientsF, trailingAvgF, trailingAvgSqF, iteration, learningRate);
+    [netI, trailingAvgI, trailingAvgSqI] = adamupdate(netI, gradientsI, trailingAvgI, trailingAvgSqI, iteration, learningRate);
+    
+    % Adaptively adjust the learning rate every 'decayEpochs' epochs
+    if mod(epoch, decayEpochs) == 0
+        learningRate = learningRate * decayFactor;
+        fprintf('Epoch %d: Adjusted Learning Rate = %e\n', epoch, learningRate);
+    end
+    
+    lossHistory(epoch) = double(gather(extractdata(loss)));
+    if mod(epoch, 100) == 0
+        fprintf('Epoch %d, Loss = %e\n', epoch, lossHistory(epoch));
+    end
+end
+
+%% Testing the Composite Mapping
+% Forward pass: X -> Y_pred using netF; then inverse pass: Y_pred -> X_rec using netI.
+Y_pred = predict(netF, Xdl);
+X_rec = predict(netI, Y_pred);
+
+% Compute the reconstruction error as mean squared error (MSE)
+reconstructionError = mean((extractdata(X_rec) - extractdata(Xdl)).^2, 'all');
+fprintf('Reconstruction MSE (||netI(netF(X))-X||^2): %.6f\n', reconstructionError);
+
+%% Model Loss Function
+function [loss, gradientsF, gradientsI] = modelLoss(netF, netI, Xdl, Ydl, consistencyWeight)
+    % Forward prediction using the forward network (netF)
+    Y_est = forward(netF, Xdl);
+    % Inverse prediction using the inverse network (netI)
+    X_est = forward(netI, Ydl);
+    
+    % Consistency loss 1: netI(netF(Xdl)) should reconstruct Xdl.
+    X_rec = forward(netI, Y_est);
+    % Consistency loss 2: netF(netI(Ydl)) should reconstruct Ydl.
+    Y_rec = forward(netF, forward(netI, Ydl));
+    
+    % Compute individual mean-squared error (MSE) losses:
+    forwardLoss       = mean((Y_est - Ydl).^2, 'all');
+    inverseLoss       = mean((X_est - Xdl).^2, 'all');
+    consistencyLossX  = mean((X_rec - Xdl).^2, 'all');
+    consistencyLossY  = mean((Y_rec - Ydl).^2, 'all');
+    
+    % Total loss includes forward, inverse, and consistency losses.
+    loss = forwardLoss + inverseLoss + consistencyWeight*(consistencyLossX + consistencyLossY);
+    
+    % Compute gradients with respect to learnable parameters of netF and netI.
+    gradientsF = dlgradient(loss, netF.Learnables);
+    gradientsI = dlgradient(loss, netI.Learnables);
+end
