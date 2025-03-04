@@ -8,8 +8,8 @@ jointStateSub = rossubscriber('/joint_states');
 
 % Define velocity ranges
 N=50;
-vRange = linspace(-0.15,0.15,N);
-wRange = linspace(-0.15,0.15,N);
+vRange = linspace(-0.22,0.22,N);
+wRange = linspace(-0.22,0.22,N);
 
 % Initialize matrices to store results
 vActual = zeros(length(vRange)*length(wRange), 1);

@@ -4,8 +4,8 @@ omega = 0.1;
 duration= 30;
 
 %% Nodes
-pub_tb3 = rospublisher('/tb3_1/cmd_vel', 'geometry_msgs/Twist');
-sub_tb3 = rossubscriber('/tb3_1/joint_states', 'sensor_msgs/JointState');
+pub_tb3 = rospublisher('/tb3_2/cmd_vel', 'geometry_msgs/Twist');
+sub_tb3 = rossubscriber('/tb3_2/joint_states', 'sensor_msgs/JointState');
 encoderlog_tb3=[];
 msg_tb3=rosmessage(pub_tb3);
 msg_tb3.Linear.X = v;
@@ -22,8 +22,8 @@ end
 msg_tb3.Linear.X=0;
 msg_tb3.Angular.Z=0;
 send(pub_tb3, msg_tb3);
-save('encoder_test_v&omega.mat','encoderlog_tb3','linear_velocity_estimate','linear_velocity','error_linear','angular_velocity_estimate','angular_velocity','error_angular','mse_linear','mse_angular');
-% plot([0:0.2:duration],encoderlog_tb3(:,1),'r',[0:0.2:duration],encoderlog_tb3(:,2),'b');
+%save('encoder_test_v&omega.mat','encoderlog_tb3','linear_velocity_estimate','linear_velocity','error_linear','angular_velocity_estimate','angular_velocity','error_angular','mse_linear','mse_angular');
+plot([0.2:0.2:duration],encoderlog_tb3(:,1),'r',[0.2:0.2:duration],encoderlog_tb3(:,2),'b');
 %% angular velocity calc
 angular_velocity=(encoderlog_tb3(:,2)-encoderlog_tb3(:,1))*0.2065; %L=160mm/2(without wheels)
 %angular_velocity=(encoderlog_tb3(:,2)-encoderlog_tb3(:,1))*0.1853; %L=178mm/2(with wheels, mostly wrong)

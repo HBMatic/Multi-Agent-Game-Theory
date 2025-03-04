@@ -1,7 +1,7 @@
 %% parameter
-close all; clear all;
+clear all;
 T=200;
-delta=0.05;
+delta=0.2;
 % w=3;h=2; 
 w=1.5;h=1;
 t=[0:delta:T];
@@ -13,21 +13,24 @@ x_rot = x * cos(theta) - y * sin(theta);
 y_rot = x * sin(theta) + y * cos(theta);
 x_rot_dot=x_dot * cos(theta) - y_dot * sin(theta);x_rot_dotdot=x_dotdot * cos(theta) - y_dotdot * sin(theta);
 y_rot_dot=x_dot * sin(theta) + y_dot * cos(theta);y_rot_dotdot=x_dotdot * sin(theta) + y_dotdot * cos(theta);;
-plot(x_rot,y_rot);
-title(['Parametric Plot Rotated by ', num2str(theta * 180 / pi), ' Degrees']);
-grid on;
+% plot(x_rot,y_rot);
+% title(['Parametric Plot Rotated by ', num2str(theta * 180 / pi), ' Degrees']);
+% grid on;
 %% tb linear and angular velocity cal
 v=zeros(1,length(t));omega=zeros(1,length(t));
 for i=1:length(t);
     v(i)=sqrt(x_rot_dot(i)^2+y_rot_dot(i)^2);
-    omega(i)=(y_rot_dotdot(i)*x_rot_dot(i)-y_rot_dot(i)*x_rot_dotdot(i))/(x_rot_dot(i)^2+y_rot_dot(i)^2);
+    %omega(i)=(y_rot_dotdot(i)*x_rot_dot(i)-y_rot_dot(i)*x_rot_dotdot(i))/(x_rot_dot(i)^2+y_rot_dot(i)^2);
+    omega(i)= atan2(x_rot_dot(i), y_rot_dot(i));
 end
 l=size(v);
+load('NeuralNet2.mat')
+
 %% tb3 implementation
 pub_gazebo = rospublisher('/cmd_vel', 'geometry_msgs/Twist');
 sub_gazebo = rossubscriber('/odom', 'nav_msgs/Odometry');
 odomlog_gazebo=[];
-figure;
+% figure;
 plot(x_rot, y_rot, 'b', 'LineWidth', 1.5,'DisplayName','lemniscate');
 hold on;
 h_tb3_0 = animatedline('Color', 'r', 'LineWidth', 1.5,'DisplayName','Gazebo');
@@ -39,14 +42,14 @@ legend;
 grid on;
 hold on;
 msg_gazebo = rosmessage(pub_gazebo);
-rate=rosrate(20);
+rate=rosrate(5);
 tic;
 duration=T;
 j=1;
-
 for k=1:delta:duration
-    msg_gazebo.Linear.X=v(j);
-    msg_gazebo.Angular.Z=omega(j);
+    netout=predict(netI,[v(j),omega(j)]);
+    msg_gazebo.Linear.X=netout(1);
+    msg_gazebo.Angular.Z=netout(2);
     send(pub_gazebo,msg_gazebo);
     [x_gazebo, y_gazebo, theta_gazebo]=get_current_pose(sub_gazebo);
     odomlog_gazebo=[odomlog_gazebo;x_gazebo,y_gazebo];

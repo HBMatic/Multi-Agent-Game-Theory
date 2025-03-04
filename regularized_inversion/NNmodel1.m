@@ -15,7 +15,7 @@
 % Replace the synthetic data with your measured samples as needed.
 clear all
 %% Synthetic Data Generation
-load('gazebo_test_3.mat');
+load('gazebo_test_4.mat');
 M=table2array(resultsTable);
 N=size(M,1);
 X=M(:,1:2);
@@ -39,9 +39,9 @@ Ydl = dlarray(Y','CB');  % (size: 2 x N)
 %% Define Forward Network (netF) with Two Hidden Layers (Mapping: X -> Y)
 layersF = [
     featureInputLayer(2, 'Normalization','none', 'Name','input')
-    fullyConnectedLayer(10, 'Name','fc1')
+    fullyConnectedLayer(10, 'Name','fc1') %10
     tanhLayer('Name','tanh1')
-    fullyConnectedLayer(5, 'Name','fc2')
+    fullyConnectedLayer(10, 'Name','fc2') %10
     tanhLayer('Name','tanh2')
     fullyConnectedLayer(2, 'Name','fc3')
     ];
@@ -51,9 +51,9 @@ netF = dlnetwork(lgraphF);
 %% Define Inverse Network (netI) with Two Hidden Layers (Mapping: Y -> X)
 layersI = [
     featureInputLayer(2, 'Normalization','none', 'Name','input')
-    fullyConnectedLayer(5, 'Name','fc1')
+    fullyConnectedLayer(10, 'Name','fc1') %10
     tanhLayer('Name','tanh1')
-    fullyConnectedLayer(10, 'Name','fc2')
+    fullyConnectedLayer(10, 'Name','fc2') %10
     tanhLayer('Name','tanh2')
     fullyConnectedLayer(2, 'Name','fc3')
     ];
@@ -61,14 +61,14 @@ lgraphI = layerGraph(layersI);
 netI = dlnetwork(lgraphI);
 
 %% Training Settings
-numEpochs = 20000;
-initialLearningRate = 1e-2;
+numEpochs = 50000; %40000
+initialLearningRate = 1e-4; %1e-3
 learningRate = initialLearningRate;  % Starting learning rate
-consistencyWeight = 10.0;             % Weight for the consistency loss
+consistencyWeight = 5.0; %10            % Weight for the consistency loss
 
 % Learning rate decay settings:
-decayEpochs = 500;     % Every 250 epochs, update the learning rate.
-decayFactor = 0.9;     % Multiply learning rate by 0.9 at each decay event.
+decayEpochs = 500;  %500   % Every 250 epochs, update the learning rate.
+decayFactor = 0.95;  %0.95   % Multiply learning rate by 0.9 at each decay event.
 
 % Initialize Adam optimizer parameters for both networks
 trailingAvgF = [];
