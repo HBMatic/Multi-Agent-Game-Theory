@@ -1,4 +1,3 @@
-function pid_circle_velocity()
 % pid_circle_velocity Implements velocity tracking using two PID controllers
 % to follow a circular trajectory with TurtleBot3.
 %
@@ -23,9 +22,9 @@ function pid_circle_velocity()
 % Date: Today's Date
 
 %% 1. ROS Setup
-pub = rospublisher('/tb3_4/cmd_vel','geometry_msgs/Twist');
-odomSub = rossubscriber('/tb3_4/odom','nav_msgs/Odometry');
-jointSub = rossubscriber('/tb3_4/joint_states', 'sensor_msgs/JointState');
+pub = rospublisher('/cmd_vel','geometry_msgs/Twist');
+odomSub = rossubscriber('/odom','nav_msgs/Odometry');
+jointSub = rossubscriber('/joint_states', 'sensor_msgs/JointState');
 pause(2); % Allow time for first messages
 
 cmdMsg = rosmessage(pub);
@@ -141,4 +140,3 @@ ylabel('Angular Velocity Error (rad/s)');
 title('Angular Velocity Tracking Error');
 grid on;
 
-end

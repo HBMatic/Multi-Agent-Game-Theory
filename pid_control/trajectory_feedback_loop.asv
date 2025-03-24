@@ -1,0 +1,233 @@
+function trajectory_feedback_loop_jointstates()
+% trajectory_feedback_loop_jointstates
+% Demonstrates a two-layer control:
+%
+%   Outer Loop (Trajectory Feedback):
+%     - Reads odometry (/odom) for (x,y,theta)
+%     - Compares to desired trajectory (e.g., a circular path or a simple distance+heading control)
+%     - Outputs (v_des, w_des) to drive the robot toward the desired path
+%
+%   Inner Loop (Velocity PID):
+%     - Reads joint_states (/joint_states) for wheel positions
+%     - Computes actual wheel velocities (rad/s) via finite difference, then
+%       converts to (v_actual, w_actual)
+%     - Applies PID to match (v_des, w_des) from the outer loop
+%     - Publishes final velocity commands to /cmd_vel
+%
+% Author: Your Name
+% Date: Today's Date
+
+%% ----------------- USER PARAMETERS ------------------
+T_total = 30;            % total run time (s)
+loop_rate = 10;          % outer + inner loop freq (Hz)
+dt = 1/loop_rate;
+
+% Outer Loop Gains (simple distance+heading approach)
+K_dist  = 0.5;   % gain for distance error
+K_theta = 1.0;   % gain for heading error
+
+% Inner Loop (Velocity PID) Gains
+Kp_v = 0.2;  Ki_v = 0.0;  Kd_v = 0.01;
+Kp_w = 0.3;  Ki_w = 0.0;  Kd_w = 0.01;
+
+% Robot geometry
+wheel_radius = 0.033;    % (m)
+wheelbase    = 0.16;     % (m)
+
+% Saturations
+max_v = 0.15;            % max linear velocity (m/s)
+max_w = 1.5;             % max angular velocity (rad/s)
+
+%% --------------- SETUP ROS ---------------
+try
+    rosinit;
+catch
+    disp('ROS is already initialized.');
+end
+
+% Publishers/Subscribers
+cmdPub   = rospublisher('/tb3_4/cmd_vel','geometry_msgs/Twist');
+cmdMsg   = rosmessage(cmdPub);
+odomSub  = rossubscriber('/tb3_4/odom','nav_msgs/Odometry');
+jointSub = rossubscriber('/tb3_4/joint_states','sensor_msgs/JointState');
+
+pause(1);  % Let topics connect
+rateObj = rosrate(loop_rate);
+
+%% --------------- CHOOSE A DESIRED TRAJECTORY ---------------
+% Example: We'll do a circle of radius R, traveling at ~0.1 m/s tangential speed
+R = 1.0;            % radius (m)
+v_traj = 0.1;       % nominal linear speed (m/s)
+w_traj = v_traj / R;  % rad/s
+
+% We'll param by time: x_des(t) = R*cos(w_traj*t), y_des(t) = R*sin(w_traj*t).
+
+%% --------------- INITIALIZE PID STATES ---------------
+prev_e_v = 0;  int_e_v = 0;
+prev_e_w = 0;  int_e_w = 0;
+
+% For wheel velocity finite difference
+prevPosL = NaN;
+prevPosR = NaN;
+
+%% --------------- LOGGING ARRAYS (OPTIONAL) ---------------
+nSteps = round(T_total * loop_rate);
+log_time   = zeros(nSteps,1);
+log_xodom  = zeros(nSteps,1);
+log_yodom  = zeros(nSteps,1);
+log_thodom = zeros(nSteps,1);
+log_vact   = zeros(nSteps,1);
+log_wact   = zeros(nSteps,1);
+log_vdes   = zeros(nSteps,1);
+log_wdes   = zeros(nSteps,1);
+log_vcmd   = zeros(nSteps,1);
+log_wcmd   = zeros(nSteps,1);
+
+%% --------------- MAIN CONTROL LOOP ---------------
+disp('Starting trajectory feedback + velocity PID control...');
+tic;
+for i = 1:nSteps
+    t_current = toc;
+    log_time(i) = t_current;
+
+    %%%%%%%%%%%%%% 1) OUTER LOOP: Compute (v_des, w_des) from global error %%%%%%%%%%%%%%
+    % a) Get actual pose from odometry
+    odomMsg = receive(odomSub, 1);
+    [x_odom, y_odom, theta_odom] = extract_pose(odomMsg);
+    log_xodom(i) = x_odom;
+    log_yodom(i) = y_odom;
+    log_thodom(i) = theta_odom;
+
+    % b) Desired position on circle at time t
+    x_ref = R * cos(w_traj * t_current);
+    y_ref = R * sin(w_traj * t_current);
+
+    % c) Compute distance + heading error
+    dx = x_ref - x_odom;
+    dy = y_ref - y_odom;
+    dist_error = sqrt(dx^2 + dy^2);
+
+    heading_ref = atan2(dy, dx);
+    heading_error = heading_ref - theta_odom;
+    heading_error = atan2(sin(heading_error), cos(heading_error)); % wrap
+
+    % d) Simple distance+heading P-control for outer loop
+    v_des_outer = K_dist * dist_error; 
+    w_des_outer = K_theta * heading_error;
+
+    % e) Saturate outer loop speeds if you want
+    v_des_outer = min(max(v_des_outer, -0.3), 0.3);
+    w_des_outer = min(max(w_des_outer, -1.5), 1.5);
+
+    log_vdes(i) = v_des_outer;
+    log_wdes(i) = w_des_outer;
+
+    %%%%%%%%%%%%%% 2) INNER LOOP: Velocity PID using Joint States %%%%%%%%%%%%%%
+    % a) Read joint states, compute actual wheel speeds (rad/s) via finite difference
+    jointMsg = receive(jointSub, 1);
+    posL = jointMsg.Position(1);  % left wheel (rad)
+    posR = jointMsg.Position(2);  % right wheel (rad)
+
+    if isnan(prevPosL)
+        % first iteration
+        vL = 0;  vR = 0;
+    else
+        vL = (posL - prevPosL)/dt;   % rad/s
+        vR = (posR - prevPosR)/dt;   % rad/s
+    end
+    prevPosL = posL;
+    prevPosR = posR;
+
+    % b) Convert to actual linear + angular velocity
+    v_actual = wheel_radius * (vL + vR)/2;
+    w_actual = wheel_radius * (vR - vL)/wheelbase;
+    log_vact(i) = v_actual;
+    log_wact(i) = w_actual;
+
+    % c) Compute velocity errors
+    e_v = v_des_outer - v_actual;
+    e_w = w_des_outer - w_actual;
+
+    % d) PID increments
+    dedt_v = (e_v - prev_e_v)/dt;
+    dedt_w = (e_w - prev_e_w)/dt;
+
+    % (If you want integral)
+    % int_e_v = int_e_v + e_v*dt;
+    % int_e_w = int_e_w + e_w*dt;
+
+    % e) PID outputs
+    u_v = Kp_v*e_v + Ki_v*int_e_v + Kd_v*dedt_v;
+    u_w = Kp_w*e_w + Ki_w*int_e_w + Kd_w*dedt_w;
+
+    prev_e_v = e_v;
+    prev_e_w = e_w;
+
+    % f) Combine feed-forward + feedback
+    v_cmd = v_des_outer + u_v;
+    w_cmd = w_des_outer + u_w;
+
+    % g) Saturate final commands
+    v_cmd = min(max(v_cmd, -max_v), max_v);
+    w_cmd = min(max(w_cmd, -max_w), max_w);
+
+    log_vcmd(i) = v_cmd;
+    log_wcmd(i) = w_cmd;
+
+    % h) Publish
+    cmdMsg.Linear.X = v_cmd;
+    cmdMsg.Angular.Z = w_cmd;
+    send(cmdPub, cmdMsg);
+
+    waitfor(rateObj);
+end
+
+%% Stop the robot
+cmdMsg.Linear.X = 0; 
+cmdMsg.Angular.Z = 0;
+send(cmdPub, cmdMsg);
+disp('Done. Robot stopped.');
+
+%% (Optional) Plot results
+figure('Name','Trajectory: Actual vs. Reference');
+plot(log_xodom, log_yodom, 'r-', 'LineWidth',2); hold on;
+% We can also plot the param eqn for the circle
+t_plot = linspace(0, T_total, 200);
+plot(R*cos(w_traj*t_plot), R*sin(w_traj*t_plot), 'b--','LineWidth',2);
+legend('Actual Odom','Reference Circle');
+xlabel('X (m)'); ylabel('Y (m)');
+title('Trajectory Comparison');
+grid on;
+
+figure('Name','Velocity Tracking');
+subplot(2,1,1);
+plot(log_time, log_vact,'r','LineWidth',1.5); hold on;
+plot(log_time, log_vdes,'k--','LineWidth',1.2);
+plot(log_time, log_vcmd,'b--','LineWidth',1.2);
+xlabel('Time (s)'); ylabel('Linear Velocity (m/s)');
+legend('v_{actual}','v_{des,outer}','v_{cmd,final}');
+title('Linear Velocity Tracking');
+grid on;
+
+subplot(2,1,2);
+plot(log_time, log_wact,'r','LineWidth',1.5); hold on;
+plot(log_time, log_wdes,'k--','LineWidth',1.2);
+plot(log_time, log_wcmd,'b--','LineWidth',1.2);
+xlabel('Time (s)'); ylabel('Angular Velocity (rad/s)');
+legend('\omega_{actual}','\omega_{des,outer}','\omega_{cmd,final}');
+title('Angular Velocity Tracking');
+grid on;
+
+%% Cleanup
+% rosshutdown;
+
+end
+
+function [x, y, theta] = extract_pose(odomMsg)
+% Utility to parse odometry for (x,y,theta)
+    x = odomMsg.Pose.Pose.Position.X;
+    y = odomMsg.Pose.Pose.Position.Y;
+    q = odomMsg.Pose.Pose.Orientation;
+    eul = quat2eul([q.W q.X q.Y q.Z]);  % [roll pitch yaw]
+    theta = eul(3);  % yaw
+end

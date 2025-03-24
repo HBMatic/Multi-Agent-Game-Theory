@@ -33,7 +33,7 @@ function followOdeTrajectory()
                            omega];
                        
     % Obtain the initial state from odometry
-    sub = rossubscriber('/odom', 'nav_msgs/Odometry');
+    sub = rossubscriber('/tb3_1/odom', 'nav_msgs/Odometry');
     [x0, y0, theta0] = get_current_pose(sub);
     initial_state = [x0; y0; theta0];
     

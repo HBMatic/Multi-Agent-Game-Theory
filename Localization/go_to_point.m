@@ -24,8 +24,8 @@ function moveTurtlebotPIDWithOrientation(targetX, targetY, targetTheta)
 %       should be available in your MATLAB path.
 
 %% ROS Setup
-pub = rospublisher('/cmd_vel','geometry_msgs/Twist');
-sub = rossubscriber('/odom','nav_msgs/Odometry');
+pub = rospublisher('/tb3_2/cmd_vel','geometry_msgs/Twist');
+sub = rossubscriber('/tb3_2/odom','nav_msgs/Odometry');
 msg = rosmessage(pub);
 
 %% Get Starting Pose and Generate Reference Trajectory
@@ -52,7 +52,7 @@ prev_linear_error = 0;
 prev_angular_error = 0;
 
 %% Control Loop Parameters
-dt = 0.2;               % Time step (seconds)
+dt = 0.1;               % Time step (seconds)
 rateHz = 1/dt;          % Control loop frequency (Hz)
 rateObj = rosrate(rateHz);
 distance_tolerance = 0.02;   % Distance threshold (meters)
