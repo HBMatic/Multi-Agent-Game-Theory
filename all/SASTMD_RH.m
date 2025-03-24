@@ -1,0 +1,149 @@
+clc; close all; clear all;
+
+mdata = [];
+T = 5;
+delta = 0.05;
+time = 0:delta:T;
+% defender = input('Enter no of Defender: ');
+defender = 4;
+agents = defender + 2;
+destroyed_defenders = false(1, defender);
+evade_position = [];
+xinit = 2 * rand(2 * agents, 1);
+% xinit = [0.5811, 0.8597, 1.2458, 1.0700, 0.3914, -0.2226, 1.3165, -0.3429, -0.0322, 2.3312]'; % CS-1
+% xinit = 2*[0.9736;0.8717; 0.8936;0.6127;1.0170;1.0215;1.6353;1.5897;1.2886;0.7572];
+% xinit = [0.1710;0.5250;1.6020;0.0584;1.8577;1.4607;0.9772;1.1571;0.4746;0.9177];
+% xinit = [1.2972;2.4759;0.2504;0.3995;0.5202;1.1728;2.4941;2.4101;0.1814;1.1978;1.5806;1.2504];
+% % xinit = [1.6294;1.8116;0.2540;1.8268;1.2647;0.1951;0.5570;1.0938;1.9150;1.9298;0.3152;1.9412];
+% % xinit = [0.7015;1.8780;1.7519;1.1003;1.2450;1.1741;0.4155;0.6025;0.9418;0.4610;1.6886;0.3895];
+% % xinit = [0.1710;0.5250;1.6020;0.0584;1.8577;1.4607;0.9772;1.1571;0.4746;0.9177;1.9262;1.0936];
+% % xinit  = [0.8355;1.9661;0.6029;1.4022;1.3327;1.0783;1.3962;1.3331;0.3563;0.2560;1.9982;0.3422];
+% % xinit = [1.3668;1.4081;0.8846;0.0392;0.6617;0.8486;0.5405;0.3941;
+% %     1.6434;0.8598;1.7755;0.7824]; %intercept to rescue
+Xa = xinit(1:2, 1);
+Xd = cell(1, defender);
+for i = 1:defender
+    Xd{i} = xinit(2 * i + 1:2 * (i + 1), 1);
+end
+
+Xt = xinit(2 * (defender + 1) + 1:2 * (defender + 2), 1);
+par = problemData_RH(Xa, Xt);
+t0 = 0;
+te = t0 + par.deltaRH;
+pari = problemData_MD_intercept(destroyed_defenders);
+initi = initializeHessians(pari);
+% [t, yi] = ode45(@(t, y) odefun(t, y, pari, destroyed_defenders), T:-delta:0, initi);
+% yi = flip(yi)'; t = flip(t);
+parr = problemData_MD_rescue(destroyed_defenders);
+initr = initializeHessians(parr);
+% [t, yr] = ode45(@(t, y) odefun(t, y, parr, destroyed_defenders), T:-delta:0, initr);
+% yr = flip(yr)'; t = flip(t);
+
+capture = 1;
+figure;
+hold on;
+xlabel('X Position');
+ylabel('Y Position');
+txt = {['Trajectories of Attacker, Defenders, and Target (\mu =',num2str(parr.meu),',\lambda =',num2str(pari.lamda),') '],': RH Mode (\sigma_a > \sigma_d_i)'};
+title(txt);
+axis equal;
+[Xa_path, Xd_paths, Xt_path] = initializePlots_2D(xinit, defender);
+
+k = 1;
+c = [];
+while capture && te <= T
+    if par.psi <= 0
+        mode = 'intercept';
+    else
+        mode = 'rescue';
+    end
+    mdata = [mdata; string(mode)];
+
+    if strcmp(mode, 'intercept')
+        for j = k:k+length(t0:delta:te)-2
+            if j == 1
+                x(:, j) = xinit;
+            else
+                % xi(:, j) = xini;
+            end
+            if j + 1 <= length(time)
+                c1 = find(destroyed_defenders);
+                if ~isequal(c, c1)
+                    pari = problemData_MD_intercept(destroyed_defenders);
+                    initi = initializeHessians(pari);
+                    [t, yi] = ode45(@(t, y) odefun(t, y, pari, destroyed_defenders), T:-delta:0, initi);
+                    yi = flip(yi)'; t = flip(t);
+                end
+                % xi(:,j) = xr(:,end);
+                Acli = calculateMatrices(yi, j, pari, destroyed_defenders);
+
+                if size(Acli) ~= size(zeros(2 * agents))
+                    rows_to_add = [2 * c1 + 1, 2 * (c1 + 1)]; rows_to_add = sort(rows_to_add);
+                    cols_to_add = [2 * c1 + 1, 2 * (c1 + 1)]; cols_to_add = sort(cols_to_add);
+                    Acli = expand_matrix_with_zeros(Acli, rows_to_add, cols_to_add);
+                end
+                x(:, j + 1) = expm(Acli * (time(j + 1) - time(j))) * x(:, j);
+                [Xai, Xdi, Xti] = updatePositions_2D(x, j + 1, defender, destroyed_defenders);
+                updatePlots_2D(Xa_path, Xd_paths, Xt_path, Xai, Xdi, Xti, defender, destroyed_defenders);
+                [capture, capture_position, capture_type, destroyed_defenders, evade_position] = checkCaptureforinterception(Xai, Xdi, Xti, pari, destroyed_defenders, time, j, evade_position);
+                drawnow;pause(0.06);
+            end
+            if ~capture
+                break;
+            end
+            c = c1;
+            if j <= length(time)
+            [Xai, Xdi, Xti] = updatePositions_2D(x, j+1, defender, destroyed_defenders);
+            xini = [Xai'; cell2mat(Xdi)'; Xti'];
+            end
+        end
+        k = j + 1;
+        
+        
+    else
+        for j = k:k+length(t0:delta:te)-2
+            if j == 1
+                x(:, j) = xinit;
+            else
+                % xr(:, j) = xini;
+            end
+            if j + 1 <= length(time)
+                c1 = find(destroyed_defenders);
+                if ~isequal(c, c1)
+                    parr = problemData_MD_rescue(destroyed_defenders);
+                    initr = initializeHessians(parr);
+                    [t, yr] = ode45(@(t, y) odefun(t, y, parr, destroyed_defenders), T:-delta:0, initr);
+                    yr = flip(yr)'; t = flip(t);
+                end
+                Aclr = calculateMatrices(yr, j, parr, destroyed_defenders);
+                if size(Aclr) ~= size(zeros(2 * agents))
+                    rows_to_add = [2 * c1 + 1, 2 * (c1 + 1)]; rows_to_add = sort(rows_to_add);
+                    cols_to_add = [2 * c1 + 1, 2 * (c1 + 1)]; cols_to_add = sort(cols_to_add);
+                    Aclr = expand_matrix_with_zeros(Aclr, rows_to_add, cols_to_add);
+                end
+                x(:, j + 1) = expm(Aclr * (time(j + 1) - time(j))) * x(:, j);
+                [Xar, Xdr, Xtr] = updatePositions_2D(x, j + 1, defender, destroyed_defenders);
+                updatePlots_2D(Xa_path, Xd_paths, Xt_path, Xar, Xdr, Xtr, defender, destroyed_defenders);
+                [capture, capture_position, capture_type, destroyed_defenders, evade_position] = checkCaptureforrescue(Xar, Xdr, Xtr, parr, destroyed_defenders, time, j, evade_position);
+                drawnow; pause(0.06);
+            end
+            if ~capture
+                break;
+            end
+            c = c1;
+            if j <= length(time)
+            [Xar, Xdr, Xtr] = updatePositions_2D(x, j+1, defender, destroyed_defenders);
+            xini = [Xar'; cell2mat(Xdr)'; Xtr'];
+            end
+        end
+        k = j + 1;
+        
+    end
+    c = [];
+    t0 = te;
+    te = te + par.deltaRH;
+    par = problemData_RH(x(1:2,end),x(end-1:end,end));
+end
+
+mdata
+displayOutcome_2D(capture, capture_type, capture_position, pari, evade_position);
