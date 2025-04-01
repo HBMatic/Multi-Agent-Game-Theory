@@ -39,8 +39,8 @@ xlabel('X Position'); ylabel('Y Position');
 title('Trajectories of Robot');
 
 %% Parameter Declaration 
-kp= 0.5; %0.5,1.6 actual robot
-L= 0.04;%0.04, 0.8 
+kp= 1.6; %0.5,
+L= 0.04;%0.04, 0.8
 rate= rosrate(10);
 
 %% Logging Initialization
