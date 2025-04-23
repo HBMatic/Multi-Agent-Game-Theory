@@ -15,7 +15,7 @@ numDefenders = size(defenders_init, 2);
 total_agents = numAttackers + numTargets + numDefenders;
 numState = length(xinit);
 x = zeros(numState, numSteps);
-U= zeros(2*total_agents,numSteps);
+U= zeros(2*total_agents,numSteps)
 x(:,1) = xinit;
 
 destroyed_defenders = false(1, numDefenders);
@@ -81,11 +81,7 @@ while capture && k < numSteps
     %     Ux(i,k) = x(i, k+1);
     %     Uy(i,k) = u_all(2*i);
     % end
-    U(:,k) = (x(:,k+1)-x(:,k))/delta;
-    for i = 1:total_agents
-        Ux(i,k) = U(2*i-1);
-        Uy(i,k) = U(2*i);
-    end
+    U(:,k) = (x(:,k+1)-x(:,k))/delta
 
     [Xa, Xd, Xt] = updatePositions_2D(x, k+1, numDefenders, destroyed_defenders);
     updatePlots_2D(Xa_path, Xd_paths, Xt_path, Xa, Xd, Xt, numDefenders, destroyed_defenders);

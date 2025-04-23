@@ -1,17 +1,20 @@
-clear;
+% Script which checks how custom odometry calculated using encoder and imu
+% data performs against odometry collected from the turtlebots. This test
+% is conducted on both simulation and actual hardware
+% clear;
 clc;
 
 %% Initialize ROS
 rosinit;
 
 % Publishers and Subscribers
-cmdVelPubReal = rospublisher('/tb3_3/cmd_vel', 'geometry_msgs/Twist'); % Real TurtleBot velocity command
+cmdVelPubReal = rospublisher('/tb3_4/cmd_vel', 'geometry_msgs/Twist'); % Real TurtleBot velocity command
 cmdVelPubGazebo = rospublisher('/cmd_vel', 'geometry_msgs/Twist');     % Gazebo TurtleBot velocity command
-odomSubReal = rossubscriber('/tb3_3/odom', 'nav_msgs/Odometry');       % Real TurtleBot core odometry
+odomSubReal = rossubscriber('/tb3_4/odom', 'nav_msgs/Odometry');       % Real TurtleBot core odometry
 odomSubGazebo = rossubscriber('/odom', 'nav_msgs/Odometry');           % Gazebo TurtleBot odometry
-jointStateSubReal = rossubscriber('/tb3_3/joint_states', 'sensor_msgs/JointState'); % Real TurtleBot joint states
+jointStateSubReal = rossubscriber('/tb3_4/joint_states', 'sensor_msgs/JointState'); % Real TurtleBot joint states
 jointStateSubGazebo = rossubscriber('/joint_states', 'sensor_msgs/JointState');    % Gazebo joint states
-imuSubReal = rossubscriber('/tb3_3/imu', 'sensor_msgs/Imu');           % Real TurtleBot IMU data
+imuSubReal = rossubscriber('/tb3_4/imu', 'sensor_msgs/Imu');           % Real TurtleBot IMU data
 imuSubGazebo = rossubscriber('/imu', 'sensor_msgs/Imu');               % Gazebo TurtleBot IMU data
 
 % Dynamics

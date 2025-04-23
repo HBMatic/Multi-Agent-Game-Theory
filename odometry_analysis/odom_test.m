@@ -2,11 +2,11 @@ clear;
 clc;
 
 % Publishers and Subscribers
-cmdVelPubReal = rospublisher('/tb3_2/cmd_vel', 'geometry_msgs/Twist'); % Real TurtleBot velocity command
+cmdVelPubReal = rospublisher('/tb3_4/cmd_vel', 'geometry_msgs/Twist'); % Real TurtleBot velocity command
 cmdVelPubGazebo = rospublisher('/cmd_vel', 'geometry_msgs/Twist'); % Gazebo velocity command
-odomSubReal = rossubscriber('/tb3_2/odom', 'nav_msgs/Odometry'); % Real TurtleBot core odometry
+odomSubReal = rossubscriber('/tb3_4/odom', 'nav_msgs/Odometry'); % Real TurtleBot core odometry
 odomSubGazebo = rossubscriber('/odom', 'nav_msgs/Odometry'); % Gazebo odometry
-jointStateSub = rossubscriber('/tb3_2/joint_states', 'sensor_msgs/JointState'); % Joint states for encoder data
+jointStateSub = rossubscriber('/tb3_4/joint_states', 'sensor_msgs/JointState'); % Joint states for encoder data
 
 % Dynamics
 v = 0.1;   % Linear velocity (m/s)

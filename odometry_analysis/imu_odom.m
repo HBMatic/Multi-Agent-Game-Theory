@@ -5,13 +5,13 @@ clc;
 rosinit;
 
 % Publishers and Subscribers
-cmdVelPubReal = rospublisher('/tb3_1/cmd_vel', 'geometry_msgs/Twist'); % Real TurtleBot velocity command
+cmdVelPubReal = rospublisher('/tb3_4/cmd_vel', 'geometry_msgs/Twist'); % Real TurtleBot velocity command
 cmdVelPubGazebo = rospublisher('/cmd_vel', 'geometry_msgs/Twist');     % Gazebo TurtleBot velocity command
-odomSubReal = rossubscriber('/tb3_1/odom', 'nav_msgs/Odometry');       % Real TurtleBot core odometry
+odomSubReal = rossubscriber('/tb3_4/odom', 'nav_msgs/Odometry');       % Real TurtleBot core odometry
 odomSubGazebo = rossubscriber('/odom', 'nav_msgs/Odometry');           % Gazebo TurtleBot odometry
-jointStateSubReal = rossubscriber('/tb3_1/joint_states', 'sensor_msgs/JointState'); % Real TurtleBot joint states
+jointStateSubReal = rossubscriber('/tb3_4/joint_states', 'sensor_msgs/JointState'); % Real TurtleBot joint states
 jointStateSubGazebo = rossubscriber('/joint_states', 'sensor_msgs/JointState');    % Gazebo joint states
-imuSubReal = rossubscriber('/tb3_1/imu', 'sensor_msgs/Imu');           % Real TurtleBot IMU data
+imuSubReal = rossubscriber('/tb3_4/imu', 'sensor_msgs/Imu');           % Real TurtleBot IMU data
 imuSubGazebo = rossubscriber('/imu', 'sensor_msgs/Imu');               % Gazebo TurtleBot IMU data
 
 % Dynamics

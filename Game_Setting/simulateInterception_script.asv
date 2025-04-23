@@ -1,5 +1,10 @@
-function [attackerTraj, targetTraj, defenderTraj, time, capture_info, Ux, Uy] = simulateInterception(attacker_init, target_init, defenders_init)
-% SIMULATEINTERCEPTIONUPDATED Simulates an interception scenario and logs control inputs.
+%% simulateInterception_script.m
+% Simulates multi-agent interception and computes trajectories and velocity commands
+
+%% --- Input Initial Positions ---
+attacker_init = [1; 1];
+target_init = [1; -1];
+defenders_init = [-1, -1; -1, 1];
 
 %% --- Simulation parameters ---
 T = 20;
@@ -15,11 +20,9 @@ numDefenders = size(defenders_init, 2);
 total_agents = numAttackers + numTargets + numDefenders;
 numState = length(xinit);
 x = zeros(numState, numSteps);
-U= zeros(2*total_agents,numSteps);
+U = zeros(2 * total_agents, numSteps);
 x(:,1) = xinit;
-
 destroyed_defenders = false(1, numDefenders);
-
 
 %% --- ODE Preprocessing ---
 par = problemData_MD_intercept(destroyed_defenders);
@@ -60,34 +63,30 @@ while capture && k < numSteps
 
     Acl = calculateMatrices(y_mat, k, par, destroyed_defenders);
 
-    if ~isequal(size(Acl), [2*total_agents, 2*total_agents])
-        rows_to_add = [2*c1+1, 2*(c1+1)];
+    if ~isequal(size(Acl), [2 * total_agents, 2 * total_agents])
+        rows_to_add = [2 * c1 + 1, 2 * (c1 + 1)];
         rows_to_add = sort(rows_to_add);
         cols_to_add = rows_to_add;
         Acl = expand_matrix_with_zeros(Acl, rows_to_add, cols_to_add);
     end
 
     if k < numSteps
-        dt = fullTime(k+1) - fullTime(k);
+        dt = fullTime(k + 1) - fullTime(k);
     else
         break;
     end
 
-    x(:, k+1) = expm(Acl * dt) * x(:, k);
+    % State update
+    x(:, k + 1) = expm(Acl * dt) * x(:, k);
 
-    % Log control inputs
-    % u_all = Acl * x(:,k);
-    % for i = 1:total_agents
-    %     Ux(i,k) = x(i, k+1);
-    %     Uy(i,k) = u_all(2*i);
-    % end
-    U(:,k) = (x(:,k+1)-x(:,k))/delta;
+    % Approximate control input as finite difference
+    U(:,k) = (x(:,k+1) - x(:,k)) / delta;
     for i = 1:total_agents
-        Ux(i,k) = U(2*i-1);
-        Uy(i,k) = U(2*i);
+        Ux(i,k) = U(2*i - 1, k);
+        Uy(i,k) = U(2*i, k);
     end
 
-    [Xa, Xd, Xt] = updatePositions_2D(x, k+1, numDefenders, destroyed_defenders);
+    [Xa, Xd, Xt] = updatePositions_2D(x, k + 1, numDefenders, destroyed_defenders);
     updatePlots_2D(Xa_path, Xd_paths, Xt_path, Xa, Xd, Xt, numDefenders, destroyed_defenders);
 
     [capture, capture_position, capture_type, destroyed_defenders, ~] = ...
@@ -108,13 +107,11 @@ while capture && k < numSteps
 end
 
 %% --- Finalize Outputs ---
-finalIndex = min(k+1, numSteps);
+finalIndex = min(k + 1, numSteps);
 time = fullTime(1:finalIndex);
 x = x(:, 1:finalIndex);
 Ux = Ux(:, 1:finalIndex);
 Uy = Uy(:, 1:finalIndex);
-
-displayOutcome_2D(capture, capture_type, capture_position, par, []);
 
 attackerTraj = x(1:2, :);
 targetTraj   = x(3:4, :);
@@ -127,4 +124,5 @@ end
 capture_info.capture = capture;
 capture_info.capture_position = capture_position;
 capture_info.capture_type = capture_type;
-end
+
+displayOutcome_2D(capture, capture_type, capture_position, par, []);

@@ -2,19 +2,19 @@ import rospy
 from geometry_msgs.msg import Twist
 import time
 
-def move_circle(duration, linear_velocity=0.1, angular_velocity=0.1):
-    rospy.init_node('move_circle', anonymous=True)
+def move_circle():
+    rospy.init_node('line', anonymous=True)
     pub = rospy.Publisher('/cmd_vel', Twist, queue_size=100)
     rate = rospy.Rate(10)  # Increase the rate to 10 Hz
 
     move_cmd = Twist()
-    move_cmd.linear.x = linear_velocity
-    move_cmd.angular.z = angular_velocity
+    move_cmd.linear.x = 0.1
+    move_cmd.angular.z = 0
 
     start_time = time.time()
-    rospy.loginfo("Starting to move in a circle")
+    rospy.loginfo("Starting to move in a line")
     try:
-        while not rospy.is_shutdown() and time.time() - start_time < duration:
+        while not rospy.is_shutdown() and time.time() - start_time < 20:
             pub.publish(move_cmd)
             rate.sleep()
     except rospy.ROSInterruptException:
@@ -27,7 +27,6 @@ def move_circle(duration, linear_velocity=0.1, angular_velocity=0.1):
 
 if __name__ == '__main__':
     try:
-        duration = 20 * 3.14159 + 2 # Example duration
-        move_circle(duration)
+        move_circle()
     except rospy.ROSInterruptException:
         pass
