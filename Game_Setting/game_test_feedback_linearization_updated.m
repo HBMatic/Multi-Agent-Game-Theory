@@ -6,17 +6,19 @@ rosshutdown; pause(1);
 rosinit; pause(1);
 
 %% 1) Set Initial Positions by Publishing to /gazebo/set_model_state topic
-initial_poses = [1, 1; 1, -1; -1, 1; -1, -1];
-names = {'t1', 't2', 't3', 't4'};
-
+%initial_poses = [1, 1; 1, -1; -1, 1; -1, -1];
+names = {'t3', 't4', 't2', 't1'};
+K=5;
+pos=reshape(randn(2*(2+2),1),2,(2+2));
+pos1=K*pos/max(sqrt(sum(pos.*pos,1)));
+initial_poses= reshape(pos1,2*(2+2),1);
 pub_model = rospublisher('/gazebo/set_model_state', 'gazebo_msgs/ModelState');
 pause(1);
-
 for i = 1:4
     msg = rosmessage(pub_model);
     msg.ModelName = names{i};
-    msg.Pose.Position.X = initial_poses(i,1);
-    msg.Pose.Position.Y = initial_poses(i,2);
+    msg.Pose.Position.X = initial_poses(2*i-1);
+    msg.Pose.Position.Y = initial_poses(2*i);
     msg.Pose.Position.Z = -1;
     msg.Pose.Orientation.W = 1;  % no rotation
     send(pub_model, msg);
@@ -59,7 +61,7 @@ pause(1);
 %% 5) Main Control Loop: Scaled Feedback Linearization
 kp = 0.5; L = 0.4; v_max = 0.22;
 rateControl = robotics.Rate(20);
-N = length(simTimeVec);
+N = length(simTimeVec)-1;
 
 actual_t1 = zeros(2,N); actual_t2 = zeros(2,N);
 actual_t3 = zeros(2,N); actual_t4 = zeros(2,N);

@@ -1,25 +1,26 @@
 function [attackerTraj, targetTraj, defenderTraj, time, capture_info, Ux, Uy] = simulateInterception(attacker_init, target_init, defenders_init)
-% SIMULATEINTERCEPTIONUPDATED Simulates an interception scenario and logs control inputs.
+% SIMULATEINTERCEPTION Simulates an interception scenario and returns interpolated smooth trajectories and control velocities.
 
-%% --- Simulation parameters ---
+%% --- Parameters ---
 T = 20;
 delta = 0.05;
 fullTime = 0:delta:T;
 numSteps = length(fullTime);
+interp_factor = 12;  % interpolation factor for smoothing
+delta_interp = delta / interp_factor;
 
-%% --- Initial state assembly ---
+%% --- State Initialization ---
 xinit = [attacker_init; target_init; defenders_init(:)];
 numAttackers = 1;
 numTargets = 1;
 numDefenders = size(defenders_init, 2);
 total_agents = numAttackers + numTargets + numDefenders;
 numState = length(xinit);
+
 x = zeros(numState, numSteps);
-U= zeros(2*total_agents,numSteps);
+U = zeros(2 * total_agents, numSteps);
 x(:,1) = xinit;
-
 destroyed_defenders = false(1, numDefenders);
-
 
 %% --- ODE Preprocessing ---
 par = problemData_MD_intercept(destroyed_defenders);
@@ -28,7 +29,7 @@ init = initializeHessians(par);
 y_mat  = flip(y_mat)';
 t_temp = flip(t_temp);
 
-%% --- Plot Setup ---
+%% --- Visualization Setup ---
 figure;
 hold on;
 xlabel('X Position'); ylabel('Y Position');
@@ -36,14 +37,13 @@ title('Trajectories of Attacker, Defenders, and Target: Interception Mode');
 axis equal;
 [Xa_path, Xd_paths, Xt_path] = initializePlots_2D(xinit, numDefenders);
 
-%% --- Loop Initialization ---
+%% --- Main Simulation Loop ---
 capture = true;
 k = 1;
 c = [];
-Ux = zeros(total_agents, numSteps);
-Uy = zeros(total_agents, numSteps);
+Ux_raw = zeros(total_agents, numSteps);
+Uy_raw = zeros(total_agents, numSteps);
 
-%% --- Main Simulation Loop ---
 while capture && k < numSteps
     if k == 1
         x(:,1) = xinit;
@@ -59,8 +59,7 @@ while capture && k < numSteps
     end
 
     Acl = calculateMatrices(y_mat, k, par, destroyed_defenders);
-
-    if ~isequal(size(Acl), [2*total_agents, 2*total_agents])
+    if ~isequal(size(Acl), [2 * total_agents, 2 * total_agents])
         rows_to_add = [2*c1+1, 2*(c1+1)];
         rows_to_add = sort(rows_to_add);
         cols_to_add = rows_to_add;
@@ -73,18 +72,13 @@ while capture && k < numSteps
         break;
     end
 
-    x(:, k+1) = expm(Acl * dt) * x(:, k);
+    x(:,k+1) = expm(Acl * dt) * x(:,k);
 
-    % Log control inputs
-    % u_all = Acl * x(:,k);
-    % for i = 1:total_agents
-    %     Ux(i,k) = x(i, k+1);
-    %     Uy(i,k) = u_all(2*i);
-    % end
-    U(:,k) = (x(:,k+1)-x(:,k))/delta;
+    % Approximate raw Ux/Uy before smoothing
+    u_all = (x(:,k+1) - x(:,k)) / delta;
     for i = 1:total_agents
-        Ux(i,k) = U(2*i-1);
-        Uy(i,k) = U(2*i);
+        Ux_raw(i,k) = u_all(2*i - 1);
+        Uy_raw(i,k) = u_all(2*i);
     end
 
     [Xa, Xd, Xt] = updatePositions_2D(x, k+1, numDefenders, destroyed_defenders);
@@ -101,30 +95,46 @@ while capture && k < numSteps
     c = c1;
     drawnow;
     pause(0.06);
+end
 
-    if k >= numSteps
-        break;
+%% --- Finalize Raw Output
+finalIndex = min(k+1, numSteps);
+time_raw = fullTime(1:finalIndex);
+x_raw = x(:, 1:finalIndex);
+Ux_raw = Ux_raw(:, 1:finalIndex);
+Uy_raw = Uy_raw(:, 1:finalIndex);
+
+%% --- Interpolation Step ---
+t_interp = time_raw(1):delta_interp:time_raw(end);
+x_interp = zeros(numState, length(t_interp));
+for i = 1:numState
+    x_interp(i,:) = interp1(time_raw, x_raw(i,:), t_interp, 'pchip');
+end
+
+%% --- Recompute Smooth Ux/Uy ---
+Ux = zeros(total_agents, length(t_interp)-1);
+Uy = zeros(total_agents, length(t_interp)-1);
+
+for j = 1:length(t_interp)-1
+    dx = (x_interp(:,j+1) - x_interp(:,j)) / delta;
+    for i = 1:total_agents
+        Ux(i,j) = dx(2*i - 1);
+        Uy(i,j) = dx(2*i);
     end
 end
 
-%% --- Finalize Outputs ---
-finalIndex = min(k+1, numSteps);
-time = fullTime(1:finalIndex);
-x = x(:, 1:finalIndex);
-Ux = Ux(:, 1:finalIndex);
-Uy = Uy(:, 1:finalIndex);
-
-displayOutcome_2D(capture, capture_type, capture_position, par, []);
-
-attackerTraj = x(1:2, :);
-targetTraj   = x(3:4, :);
+%% --- Separate Final Trajectories ---
+attackerTraj = x_interp(1:2,:);
+targetTraj   = x_interp(3:4,:);
 if numDefenders > 0
-    defenderTraj = x(5:end, :);
+    defenderTraj = x_interp(5:end,:);
 else
     defenderTraj = [];
 end
 
+time = t_interp;
 capture_info.capture = capture;
 capture_info.capture_position = capture_position;
 capture_info.capture_type = capture_type;
+
 end

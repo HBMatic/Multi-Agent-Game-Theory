@@ -5,7 +5,7 @@ delta = 0.05;
 time=[0:delta:T];
 evade_position=[];
 % defender = input('Enter number of Defender: ');
-defender = 1;
+defender = 3;
 agents = defender+2;
 destroyed_defenders = false(1,defender);
 
@@ -15,7 +15,12 @@ init = initializeHessians(par);
 y = flip(y); y = y';t = flip(t);
 
 %xinit = [0.2276;0.1619;1.5924;2.3375;2.8020;0.3897;1.7065;1.4082];
-xinit = 3*rand(2*(defender+2), 1);
+xinit = randn(2*(defender+2), 1);
+K=5;
+pos=reshape(randn(2*(defender+2),1),2,(defender+2));
+pos1=K*pos/max(sqrt(sum(pos.*pos,1)));
+xinit= reshape(pos1,2*(defender+2),1);
+save initdata  par xinit;
 %xinit = [2.1281;2.2641;0.8281;2.0391;.9653;0.4878;0.3570;1.4951;2.8792;1.0212;1.7558;0.6714];
 % xinit = [0.5749;1.5894;1.8123;1.5455;0.0516;1.3975;0.2481;2.5163;0.9674,;2.6360]; %CS-1
 % xinit = [-2;2;-1;1;1;1;1;-1;-0.6;1]; %  CS-2
@@ -62,12 +67,13 @@ while capture
         cols_to_add = sort(cols_to_add);
         Acl = expand_matrix_with_zeros(Acl,rows_to_add,cols_to_add);
     end
+    
     x(:,k+1) = expm(Acl*(time(k+1)-time(k)))*x(:,k);
     [Xa, Xd, Xt] = updatePositions_2D(x, k+1, defender, destroyed_defenders);
     updatePlots_2D(Xa_path, Xd_paths, Xt_path, Xa, Xd, Xt, defender, destroyed_defenders);
     [capture, capture_position, capture_type, destroyed_defenders,evade_position] = checkCaptureforinterception(Xa, Xd, Xt, par, destroyed_defenders, time, k,evade_position);
-  
-    if ~capture
+    
+    if (capture==0) || (k*delta>=T)
         break;
     end
     k=k+1;

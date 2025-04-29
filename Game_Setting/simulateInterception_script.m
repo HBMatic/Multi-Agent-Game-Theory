@@ -15,7 +15,7 @@ x_raw = [attackerTraj; targetTraj; defenderTraj];
 total_agents = size(x_raw,1)/2;
 
 %% 4) Interpolate Trajectories
-interp_factor = 12;  % 4x more points → smoother velocities
+interp_factor = 1;  % 4x more points → smoother velocities
 t_interp = linspace(time(1), time(end), interp_factor * length(time));
 x_interp = zeros(size(x_raw,1), length(t_interp));
 
