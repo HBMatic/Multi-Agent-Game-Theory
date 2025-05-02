@@ -50,16 +50,16 @@ m4 = receive(sub_t4,5); t4 = [m4.Pose.Pose.Position.X; m4.Pose.Pose.Position.Y];
 [attackerTraj, targetTraj, defenderTraj, simTimeVec, capture_info, Ux, Uy] = ...
     simulateInterception(t1, t2, [t3, t4]);
 
-%% 4) Initial Orientation Alignment
-k_theta_orient = 1.0; heading_tol = 0.05;
-orientTurtleBotToFirstSegment(pub_t1, sub_t1, attackerTraj, k_theta_orient, heading_tol);
-orientTurtleBotToFirstSegment(pub_t2, sub_t2, targetTraj, k_theta_orient, heading_tol);
-orientTurtleBotToFirstSegment(pub_t3, sub_t3, defenderTraj(1:2,:), k_theta_orient, heading_tol);
-orientTurtleBotToFirstSegment(pub_t4, sub_t4, defenderTraj(3:4,:), k_theta_orient, heading_tol);
-pause(1);
+% %% 4) Initial Orientation Alignment
+% k_theta_orient = 1.0; heading_tol = 0.05;
+% orientTurtleBotToFirstSegment(pub_t1, sub_t1, attackerTraj, k_theta_orient, heading_tol);
+% orientTurtleBotToFirstSegment(pub_t2, sub_t2, targetTraj, k_theta_orient, heading_tol);
+% orientTurtleBotToFirstSegment(pub_t3, sub_t3, defenderTraj(1:2,:), k_theta_orient, heading_tol);
+% orientTurtleBotToFirstSegment(pub_t4, sub_t4, defenderTraj(3:4,:), k_theta_orient, heading_tol);
+% pause(1);
 
 %% 5) Main Control Loop: Scaled Feedback Linearization
-kp = 0.5; L = 0.4; v_max = 0.22;
+kp = 0.5; L = 0.1; v_max = 0.22;
 rateControl = robotics.Rate(20);
 N = length(simTimeVec)-1;
 
@@ -74,28 +74,28 @@ for j = 1:N
     dx4 = Ux(4,j); dy4 = Uy(4,j);
 
     [x1,y1,th1] = get_current_pose(sub_t1);
-    [v1,w1] = compute_fb_vel_scaled(dx1, dy1, attackerTraj(:,j), x1, y1, th1, kp, L, v_max);
+    [v1,w1] = compute_fb_vel_scaled(dx1, dy1, attackerTraj(:,j), x1, y1, th1, kp, L);
     msg_t1.Linear.X = v1; msg_t1.Angular.Z = w1; send(pub_t1, msg_t1);
     actual_t1(:,j) = [x1; y1]; v_log(1,j) = v1; w_log(1,j) = w1;
 
     [x2,y2,th2] = get_current_pose(sub_t2);
-    [v2,w2] = compute_fb_vel_scaled(dx2, dy2, targetTraj(:,j), x2, y2, th2, kp, L, v_max);
+    [v2,w2] = compute_fb_vel_scaled(dx2, dy2, targetTraj(:,j), x2, y2, th2, kp, L);
     msg_t2.Linear.X = v2; msg_t2.Angular.Z = w2; send(pub_t2, msg_t2);
     actual_t2(:,j) = [x2; y2]; v_log(2,j) = v2; w_log(2,j) = w2;
 
     [x3,y3,th3] = get_current_pose(sub_t3);
-    [v3,w3] = compute_fb_vel_scaled(dx3, dy3, defenderTraj(1:2,j), x3, y3, th3, kp, L, v_max);
+    [v3,w3] = compute_fb_vel_scaled(dx3, dy3, defenderTraj(1:2,j), x3, y3, th3, kp, L);
     msg_t3.Linear.X = v3; msg_t3.Angular.Z = w3; send(pub_t3, msg_t3);
     actual_t3(:,j) = [x3; y3]; v_log(3,j) = v3; w_log(3,j) = w3;
 
     [x4,y4,th4] = get_current_pose(sub_t4);
-    [v4,w4] = compute_fb_vel_scaled(dx4, dy4, defenderTraj(3:4,j), x4, y4, th4, kp, L, v_max);
+    [v4,w4] = compute_fb_vel_scaled(dx4, dy4, defenderTraj(3:4,j), x4, y4, th4, kp, L);
     msg_t4.Linear.X = v4; msg_t4.Angular.Z = w4; send(pub_t4, msg_t4);
     actual_t4(:,j) = [x4; y4]; v_log(4,j) = v4; w_log(4,j) = w4;
 
     waitfor(rateControl);
 end
-
+pause(5);
 %% 6) Stop All Robots
 for pub = {pub_t1,pub_t2,pub_t3,pub_t4}
     m = rosmessage(pub{:});
@@ -122,16 +122,11 @@ rosshutdown;
 
 %% --- Helper Functions ---
 
-function [v, omega] = compute_fb_vel_scaled(dx_ref, dy_ref, refXY, x, y, theta, kp, L, v_max)
+function [v, omega] = compute_fb_vel_scaled(dx_ref, dy_ref, refXY, x, y, theta, kp, L)
     err = refXY - [x + L*cos(theta); y + L*sin(theta)];
     Ainv = [ cos(theta), sin(theta); -sin(theta)/L, cos(theta)/L ];
     u = Ainv * ([dx_ref; dy_ref] + kp * err);
     v = u(1); omega = u(2);
-    if abs(v) > v_max
-        scale = v_max / abs(v);
-        v = v * scale;
-        omega = omega * scale;
-    end
 end
 
 function [x, y, theta] = get_current_pose(sub)
