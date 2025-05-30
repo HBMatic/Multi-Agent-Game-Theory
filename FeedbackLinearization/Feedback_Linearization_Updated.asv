@@ -42,7 +42,7 @@ title('Trajectories of Robot');
 
 %% Parameter Declaration 
 kp = 1.6;   % Proportional gain for feedback
-L  = 0.4; %0.1   % Lookahead or offset distance
+L  = -0.01; %0.1   % Lookahead or offset distance
 rate = rosrate(10);
 
 %% Logging Initialization

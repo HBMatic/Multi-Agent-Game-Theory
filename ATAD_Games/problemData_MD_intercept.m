@@ -3,9 +3,9 @@ function par = problemData_MD_intercept(destroyed_defenders)
     defender = par.defender;
     % Parametere
     par.lamda = 1;
-    par.sigma(1) = 0.3; % Attacker's capture radius
+    par.sigma(1) = 0.2; % Attacker's capture radius
     par.sigma(2) = 0.1; % For all small_defender radius
-    par.sigma(3) = 0.2; % One big defender capture radius
+    par.sigma(3) = 0.3; % One big defender capture radius
     agents = par.defender + 2;  % Total number of agents (1 attacker + n defenders + 1 target)
     
     % Symbolic variables

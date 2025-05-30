@@ -5,7 +5,7 @@ delta = 0.05;
 time=[0:delta:T];
 evade_position=[];
 % defender = input('Enter number of Defender: ');
-defender = 3;
+defender = 2;
 agents = defender+2;
 destroyed_defenders = false(1,defender);
 
@@ -21,6 +21,7 @@ pos=reshape(randn(2*(defender+2),1),2,(defender+2));
 pos1=K*pos/max(sqrt(sum(pos.*pos,1)));
 xinit= reshape(pos1,2*(defender+2),1);
 save initdata  par xinit;
+%xinit=[-10;-10;0;0;-0.1;-0.1];
 %xinit = [2.1281;2.2641;0.8281;2.0391;.9653;0.4878;0.3570;1.4951;2.8792;1.0212;1.7558;0.6714];
 % xinit = [0.5749;1.5894;1.8123;1.5455;0.0516;1.3975;0.2481;2.5163;0.9674,;2.6360]; %CS-1
 % xinit = [-2;2;-1;1;1;1;1;-1;-0.6;1]; %  CS-2

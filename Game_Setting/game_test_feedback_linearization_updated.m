@@ -6,12 +6,13 @@ rosshutdown; pause(1);
 rosinit; pause(1);
 
 %% 1) Set Initial Positions by Publishing to /gazebo/set_model_state topic
-%initial_poses = [1, 1; 1, -1; -1, 1; -1, -1];
+% initial_poses = [1, 1; 1, -1; -1, 1; -1, -1];[1.684832542076862, 3.565773507519430;2.505001702711259,-1.045722354677033;1.012743955883415,-2.713144998235781;3.061601438835337,-3.953049029511447]
 names = {'t3', 't4', 't2', 't1'};
 K=5;
 pos=reshape(randn(2*(2+2),1),2,(2+2));
 pos1=K*pos/max(sqrt(sum(pos.*pos,1)));
 initial_poses= reshape(pos1,2*(2+2),1);
+xinit=initial_poses;
 pub_model = rospublisher('/gazebo/set_model_state', 'gazebo_msgs/ModelState');
 pause(1);
 for i = 1:4

@@ -5,7 +5,7 @@ delta = 0.05;
 time=[0:delta:T];
 evade_position=[];
 % defender = input('Enter number of Defender: ');
-defender = 1;
+defender = 3;
 agents = defender+2;
 destroyed_defenders = false(1,defender);
 
