@@ -1,4 +1,4 @@
-function go_to_point_updated(targetX, targetY, targetTheta)
+function go_to_point_tb3_4(targetX, targetY, targetTheta)
 % moveTurtlebotPIDWithOrientation Moves the TurtleBot from its current pose
 % to a target pose [targetX, targetY, targetTheta] using PID control.
 %
@@ -24,8 +24,8 @@ function go_to_point_updated(targetX, targetY, targetTheta)
 %       should be available in your MATLAB path.
 
 %% ROS Setup
-pub = rospublisher('/tb3_3/cmd_vel','geometry_msgs/Twist');
-sub = rossubscriber('/tb3_3/odom','nav_msgs/Odometry');
+pub = rospublisher('/tb3_4/cmd_vel','geometry_msgs/Twist');
+sub = rossubscriber('/tb3_4/odom','nav_msgs/Odometry');
 msg = rosmessage(pub);
 
 %% Get Starting Pose and Generate Reference Trajectory
@@ -60,7 +60,7 @@ orientation_tolerance = 0.02;  % Orientation threshold (radians)
 max_duration = 120;          % Maximum control duration (seconds)
 
 tic;
-disp('Starting PID control for target pose with orientation...');
+% disp('Starting PID control for target pose with orientation...');
 
 % Log arrays for actual path and errors
 actualPath = [];
@@ -90,7 +90,7 @@ while toc < max_duration
     
     % Check if both distance and orientation errors are within tolerances.
     if (error_distance < distance_tolerance) && (abs(error_heading) < orientation_tolerance)
-        disp('Target pose reached.');
+        % disp('Target pose reached.');
         break;
     end
     
@@ -131,8 +131,8 @@ while toc < max_duration
     errorLog = [errorLog; error_distance, error_heading];
     
     % Optionally display current errors
-    fprintf('Distance error: %.3f m, Heading error: %.3f rad\n', error_distance, error_heading);
-    
+    % fprintf('Distance error: %.3f m, Heading error: %.3f rad\n', error_distance, error_heading);
+    % 
     waitfor(rateObj);
 end
 
@@ -140,28 +140,27 @@ end
 msg.Linear.X = 0;
 msg.Angular.Z = 0;
 send(pub, msg);
-disp('PID control finished, robot stopped.');
-
-%% Plot Trajectories and Errors
-figure;
-plot(refX, refY, 'b--', 'LineWidth', 2); hold on;
-plot(actualPath(:,1), actualPath(:,2), 'r-', 'LineWidth', 2);
-xlabel('X Position (m)'); ylabel('Y Position (m)');
-title('Reference Trajectory vs. Actual Trajectory');
-legend('Reference (Straight Line)', 'Actual Path');
-grid on;
-
-figure;
-subplot(2,1,1);
-plot(timeLog, errorLog(:,1), 'LineWidth', 2);
-xlabel('Time (s)'); ylabel('Distance Error (m)');
-title('Distance Error vs Time');
-grid on;
-
-subplot(2,1,2);
-plot(timeLog, errorLog(:,2), 'LineWidth', 2);
-xlabel('Time (s)'); ylabel('Heading Error (rad)');
-title('Heading Error vs Time');
-grid on;
+% disp('PID control finished, robot stopped.');
+% %% Plot Trajectories and Errors
+% figure;
+% plot(refX, refY, 'b--', 'LineWidth', 2); hold on;
+% plot(actualPath(:,1), actualPath(:,2), 'r-', 'LineWidth', 2);
+% xlabel('X Position (m)'); ylabel('Y Position (m)');
+% title('Reference Trajectory vs. Actual Trajectory');
+% legend('Reference (Straight Line)', 'Actual Path');
+% grid on;
+% 
+% figure;
+% subplot(2,1,1);
+% plot(timeLog, errorLog(:,1), 'LineWidth', 2);
+% xlabel('Time (s)'); ylabel('Distance Error (m)');
+% title('Distance Error vs Time');
+% grid on;
+% 
+% subplot(2,1,2);
+% plot(timeLog, errorLog(:,2), 'LineWidth', 2);
+% xlabel('Time (s)'); ylabel('Heading Error (rad)');
+% title('Heading Error vs Time');
+% grid on;
 
 end

@@ -1,7 +1,7 @@
-clc; close all; clear all;
+clc; clear all;close all;
 
 mdata = [];
-T = 5;
+T = 20;
 delta = 0.05;
 time = 0:delta:T;
 % defender = input('Enter no of Defender: ');
@@ -9,8 +9,14 @@ defender = 1;
 agents = defender + 2;
 destroyed_defenders = false(1, defender);
 evade_position = [];
-%xinit = 2 * rand(2 * agents, 1);
-xinit=[-10;-10;0;0;-0.1;-0.1];
+xinit = 2 * rand(2 * agents, 1);
+xinit = [1;-1.6;0;-1.6;0.4;-0.8];
+%xinit = [-1.5;-0.5;2;-2;-2;-2;1;0.5];
+
+
+% xinit = [1.2982;1.4634;1.2955;0.9018;1.0940;0.5926;1.4894;0.3779];
+% xinit = [6.7874;7.5774;7.4313;3.9223;6.5548;1.7119;7.0605;0.3183];
+% xinit=[-1,1,1,0,0,0,2,3]';
 % xinit = [0.5811, 0.8597, 1.2458, 1.0700, 0.3914, -0.2226, 1.3165, -0.3429, -0.0322, 2.3312]'; % CS-1
 % xinit = 2*[0.9736;0.8717; 0.8936;0.6127;1.0170;1.0215;1.6353;1.5897;1.2886;0.7572];
 % xinit = [0.1710;0.5250;1.6020;0.0584;1.8577;1.4607;0.9772;1.1571;0.4746;0.9177];
@@ -51,7 +57,7 @@ axis equal;
 [Xa_path, Xd_paths, Xt_path] = initializePlots_2D(xinit, defender);
 
 k = 1;
-c = [];
+c = [];c1=[];
 while capture && te <= T
     if par.psi <= 0
         mode = 'intercept';
@@ -69,6 +75,11 @@ while capture && te <= T
             end
             if j + 1 <= length(time)
                 c1 = find(destroyed_defenders);
+                % if ~isequal(c, c1) || defender == 1
+                pari = problemData_MD_intercept(destroyed_defenders);
+                    initi = initializeHessians(pari);
+                    [t, yi] = ode45(@(t, y) odefun(t, y, pari, destroyed_defenders), T:-delta:0, initi);
+                    yi = flip(yi)'; t = flip(t);
                 if ~isequal(c, c1)
                     pari = problemData_MD_intercept(destroyed_defenders);
                     initi = initializeHessians(pari);
@@ -110,6 +121,10 @@ while capture && te <= T
             end
             if j + 1 <= length(time)
                 c1 = find(destroyed_defenders);
+                parr = problemData_MD_rescue(destroyed_defenders);
+                initr = initializeHessians(parr);
+                [t, yr] = ode45(@(t, y) odefun(t, y, parr, destroyed_defenders), T:-delta:0, initr);
+                yr = flip(yr)'; t = flip(t);
                 if ~isequal(c, c1)
                     parr = problemData_MD_rescue(destroyed_defenders);
                     initr = initializeHessians(parr);

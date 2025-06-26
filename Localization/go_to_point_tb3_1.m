@@ -1,11 +1,11 @@
-function moveTurtlebotPIDWithOrientation(targetX, targetY, targetTheta)
+function go_to_point_tb3_1(targetX, targetY, targetTheta)
 % moveTurtlebotPIDWithOrientation Moves the TurtleBot from its current pose
 % to a target pose [targetX, targetY, targetTheta] using PID control.
 %
 %   moveTurtlebotPIDWithOrientation(targetX, targetY, targetTheta)
 %
 % Inputs:
-%   targetX     - Target X-coordinate (meters)
+%   targetX     - Target X-coordinate (meters) 
 %   targetY     - Target Y-coordinate (meters)
 %   targetTheta - Target orientation (radians)
 %
@@ -24,8 +24,8 @@ function moveTurtlebotPIDWithOrientation(targetX, targetY, targetTheta)
 %       should be available in your MATLAB path.
 
 %% ROS Setup
-pub = rospublisher('/tb3_2/cmd_vel','geometry_msgs/Twist');
-sub = rossubscriber('/tb3_2/odom','nav_msgs/Odometry');
+pub = rospublisher('/tb3_1/cmd_vel','geometry_msgs/Twist');
+sub = rossubscriber('/tb3_1/odom','nav_msgs/Odometry');
 msg = rosmessage(pub);
 
 %% Get Starting Pose and Generate Reference Trajectory
@@ -52,7 +52,7 @@ prev_linear_error = 0;
 prev_angular_error = 0;
 
 %% Control Loop Parameters
-dt = 0.1;               % Time step (seconds)
+dt = 0.2;               % Time step (seconds)
 rateHz = 1/dt;          % Control loop frequency (Hz)
 rateObj = rosrate(rateHz);
 distance_tolerance = 0.02;   % Distance threshold (meters)
@@ -117,7 +117,7 @@ while toc < max_duration
     prev_angular_error = error_heading;
     
     % Saturate the linear velocity to 0.15 m/s and angular to 1.5 rad/s
-    v_cmd = max(min(v_cmd, 0.2), -0.2);
+    v_cmd = max(min(v_cmd, 0.1), -0.1);
     omega_cmd = max(min(omega_cmd, 1), -1);
     
     % Send commands to TurtleBot

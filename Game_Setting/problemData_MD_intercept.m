@@ -4,9 +4,9 @@ function par = problemData_MD_intercept(destroyed_defenders)
 
     % Parametere
     par.lamda = 1;
-    par.sigma(1) = 0.12; % Attacker's capture radius
+    par.sigma(1) = 0.17; % Attacker's capture radius
     par.sigma(2) = 0.15; % For all small_defender radius
-    par.sigma(3) = 0.2; % One big defender capture radius
+    par.sigma(3) = 0.19; % One big defender capture radius
     agents = par.defender + 2;  % Total number of agents (1 attacker + n defenders + 1 target)
     
     % Symbolic variables
@@ -24,8 +24,8 @@ function par = problemData_MD_intercept(destroyed_defenders)
     par.A = zeros(par.n, par.n);
     par.Ba = kron(I(:, 1), eye(2, 2));
     par.Bt = kron(I(:, defender + 2), eye(2, 2));
-    par.Ra = 2.5 * eye(2, 2); %0.75 * eye(2, 2)
-    par.Rt = 10 * eye(2, 2); %1.25 * eye(2, 2)
+    par.Ra = 17.75 * eye(2, 2); %0.75 * eye(2, 2)
+    par.Rt = 18.25 * eye(2, 2); %1.25 * eye(2, 2)
     par.Sa = par.Ba * (par.Ra \ par.Ba');
     par.St = par.Bt * (par.Rt \ par.Bt');
     par.Qa = eye(2, 2);
@@ -34,7 +34,7 @@ function par = problemData_MD_intercept(destroyed_defenders)
     
     for i = 1:par.defender
         par.Bd{i} = kron(I(:, i+1), eye(2,2));
-        par.Rd{i} = 5 * eye(2, 2); %1*eye(2, 2)
+        par.Rd{i} = 18 * eye(2, 2); %1*eye(2, 2)
         par.Sd{i} = par.Bd{i} / par.Rd{i} * par.Bd{i}';
         X(2*i+1:2*(i+1)) = sym(['Xd' num2str(i) '_1'; 'Xd' num2str(i) '_2']);
     end
