@@ -21,8 +21,10 @@ function par = problemData_MD_rescue(destroyed_defenders)
     par.A = zeros(par.n, par.n);
     par.Ba = kron(I(:, 1), eye(2, 2));
     par.Bt = kron(I(:, defender + 2), eye(2, 2));
-    par.Ra = 17.75 * eye(2, 2);
-    par.Rt = 18.25* eye(2, 2);
+    %par.Ra = 17.75 * eye(2, 2);
+    %par.Rt = 18.25* eye(2, 2);
+    par.Ra = 100 * eye(2, 2);
+    par.Rt = 110 * eye(2, 2);
     par.Sa = par.Ba * (par.Ra \ par.Ba');
     par.St = par.Bt * (par.Rt \ par.Bt');
     par.Qa = eye(2, 2);
@@ -30,7 +32,8 @@ function par = problemData_MD_rescue(destroyed_defenders)
 
     for i = 1:defender
         par.Bd{i} = kron(I(:, i+1), eye(2, 2));
-        par.Rd{i} = 18 * eye(2, 2);
+        %par.Rd{i} = 18 * eye(2, 2);
+        par.Rd{i} = 105 * eye(2, 2);
         par.Sd{i} = par.Bd{i} / par.Rd{i} * par.Bd{i}';
         X(2*i+1:2*(i+1)) = sym(['Xd' num2str(i) '_1'; 'Xd' num2str(i) '_2']);
     end

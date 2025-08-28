@@ -8,12 +8,13 @@ K = 5;
 pos = reshape(randn(2*4,1),2,4);
 pos1 = K * pos ./ max(sqrt(sum(pos.^2,1)));   % normalize radius
 initial_poses = reshape(pos1, 2*4, 1);
-initial_poses = [-1.5772;-0.3217;1.4422;-2.4273;-4.2458;-2.6407;0.6078;0.7132];
-initial_poses = [-1.5;-0.5;2;-2;-2;-2;1;0.5];
+%initial_poses = [-1.5772;-0.3217;1.4422;-2.4273;-4.2458;-2.6407;0.6078;0.7132];
+%initial_poses =  [0;-1.6;1;-0.8;1;-1.6;0.2;-0.8];
+initial_poses  =  [0.2;-0.8;0.6;-1;1;-1.6;0;-1.7];
 
 % generate random yaws in [-pi, pi]
 yaws = -pi + 2*pi*rand(1,4);
-yaws = [0.9283;-0.3084;0.2954;-1.2798];
+yaws = [2.5;1.5;1;-2];
 
 
 pub_model = rospublisher('/gazebo/set_model_state', 'gazebo_msgs/ModelState');

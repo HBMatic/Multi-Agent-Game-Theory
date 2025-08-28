@@ -1,11 +1,11 @@
 clc; close all; clear all;
 
-T = 5;
+T = 10;
 delta = 0.05;
 time=[0:delta:T];
 evade_position=[];
 % defender = input('Enter number of Defender: ');
-defender = 5;
+defender = 1;
 agents = defender+2;
 destroyed_defenders = false(1,defender);
 

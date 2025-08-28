@@ -13,10 +13,10 @@ function [attackerTraj, targetTraj, defenderTraj, simTimeVec, capture_info, Ux, 
 %   mdata                                 – log of "intercept"/"rescue" modes
 
     %--- Simulation parameters ---
-    T       = 30;
+    T       = 20;
     delta   = 0.05;
     time    = 0:delta:T;
-    interp_factor = 3;
+    interp_factor = 12;
     delta_interp = delta / interp_factor;
     defender = size(defenders_init,2);
     agents   = defender + 2;
