@@ -22,8 +22,8 @@ y_dot = (b*omega)*cos(2*omega*t);
 rosshutdown; % Shutdown previous ROS instances, if any
 rosinit; % Start ROS
 
-pub_gazebo = rospublisher('/tb3_1/cmd_vel','geometry_msgs/Twist');
-sub_gazebo = rossubscriber('/tb3_1/odom','nav_msgs/Odometry');
+pub_gazebo = rospublisher('/cmd_vel','geometry_msgs/Twist');
+sub_gazebo = rossubscriber('/odom','nav_msgs/Odometry');
 msg_gazebo = rosmessage(pub_gazebo);
 
 pause(1); % Give some time for ROS communication to establish
